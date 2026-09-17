@@ -1,106 +1,105 @@
+﻿import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/theme/app_colors.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:front_check/core/theme/app_colors.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final user = FirebaseAuth.instance.currentUser;
+
+  Future<void> _logout() async {
+    await FirebaseAuth.instance.signOut();
+    if (mounted) context.go('/');
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: const [
-            Icon(Icons.home_work_rounded, color: AppColors.accent),
-            SizedBox(width: 8),
-            Text('Arrendamiento'),
-          ],
-        ),
+        title: const Text('Inicio'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_none),
-            onPressed: () {},
+            icon: const Icon(Icons.logout_rounded),
+            onPressed: _logout,
           ),
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: GestureDetector(
-              onTap: () {
-                // Return to login for demo purposes
-                context.go('/login');
-              },
-              child: const CircleAvatar(
-                backgroundColor: AppColors.surfaceLight,
-                radius: 16,
-                child: Icon(Icons.person, size: 16, color: AppColors.textLight),
-              ),
-            ),
-          )
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildPremiumSearchHero(context),
-            const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: Stack(
+        children: [
+          // Fondo oscuro/claro
+          Container(color: theme.colorScheme.background),
+          
+          // Desenfoque de acento superior
+          Positioned(
+            top: -100, right: -50,
+            child: Container(
+              width: 300, height: 300,
+              decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.primary.withOpacity(0.2)),
+              child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80), child: Container()),
+            ),
+          ),
+          
+          SafeArea(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('Recomendados', style: Theme.of(context).textTheme.titleLarge),
-                  const Text('Ver todos', style: TextStyle(color: AppColors.accent, fontWeight: FontWeight.bold)),
+                  _buildHeaderCard(context),
+                  const SizedBox(height: 30),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Text('Propiedades Destacadas', style: theme.textTheme.titleLarge),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildCatalogGrid(context),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            _buildCatalogGrid(),
-            const SizedBox(height: 32),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildPremiumSearchHero(BuildContext context) {
+  Widget _buildHeaderCard(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.surfaceLight),
+        border: Border.all(color: theme.colorScheme.onSurfaceVariant),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.5),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Encuentra tu',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.textMuted),
-          ),
+          Text('Encuentra tu', style: theme.textTheme.bodyLarge?.copyWith(color: theme.textTheme.bodyMedium?.color)),
           const SizedBox(height: 4),
-          Text(
-            'Lugar Ideal',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: AppColors.textLight,
-                ),
-          ),
+          Text('Lugar Ideal', style: theme.textTheme.headlineMedium),
           const SizedBox(height: 20),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.background,
+              color: theme.colorScheme.background,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.surfaceLight),
+              border: Border.all(color: theme.colorScheme.onSurfaceVariant),
             ),
-            child: const TextField(
+            child: TextField(
+              style: TextStyle(color: theme.textTheme.bodyLarge?.color),
               decoration: InputDecoration(
                 hintText: 'Buscar por zona (ej. Vista Hermosa)',
                 border: InputBorder.none,
@@ -108,7 +107,7 @@ class HomeScreen extends StatelessWidget {
                 focusedBorder: InputBorder.none,
                 fillColor: Colors.transparent,
                 filled: false,
-                prefixIcon: Icon(Icons.search, color: AppColors.accent),
+                prefixIcon: Icon(Icons.search, color: theme.colorScheme.primary),
               ),
             ),
           ),
@@ -117,12 +116,13 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCatalogGrid() {
+  Widget _buildCatalogGrid(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Column(
         children: [
           _buildPremiumCard(
+            context: context,
             title: 'Departamento Vista Hermosa',
             price: '\$3,500',
             location: 'Col. Vista Hermosa',
@@ -133,6 +133,7 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           _buildPremiumCard(
+            context: context,
             title: 'Cuarto Estudiantil',
             price: '\$1,800',
             location: 'Cerca de UT',
@@ -143,6 +144,7 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           _buildPremiumCard(
+            context: context,
             title: 'Edificio Centro',
             price: '\$4,200',
             location: 'Centro Histórico',
@@ -157,6 +159,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildPremiumCard({
+    required BuildContext context,
     required String title,
     required String price,
     required String location,
@@ -165,17 +168,14 @@ class HomeScreen extends StatelessWidget {
     required String beds,
     required String water,
   }) {
+    final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.surfaceLight),
+        border: Border.all(color: theme.colorScheme.onSurfaceVariant),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8)),
         ],
       ),
       child: Column(
@@ -192,21 +192,17 @@ class HomeScreen extends StatelessWidget {
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Container(
                     height: 200,
-                    color: AppColors.background,
-                    child: const Center(child: Icon(Icons.image, size: 50, color: AppColors.surfaceLight)),
+                    color: theme.colorScheme.background,
+                    child: Center(child: Icon(Icons.image, size: 50, color: theme.colorScheme.onSurfaceVariant)),
                   ),
                 ),
               ),
               if (isVerified)
                 Positioned(
-                  top: 16,
-                  left: 16,
+                  top: 16, left: 16,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    decoration: BoxDecoration(color: AppColors.success.withOpacity(0.9), borderRadius: BorderRadius.circular(12)),
                     child: Row(
                       children: const [
                         Icon(Icons.verified, color: Colors.white, size: 14),
@@ -226,26 +222,16 @@ class HomeScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textLight),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Text(
-                      price,
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.accent),
-                    ),
+                    Expanded(child: Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textTheme.bodyLarge?.color), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    Text(price, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(Icons.location_on, size: 14, color: AppColors.textMuted),
+                    Icon(Icons.location_on, size: 14, color: theme.textTheme.bodyMedium?.color),
                     const SizedBox(width: 4),
-                    Text(location, style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                    Text(location, style: TextStyle(color: theme.textTheme.bodyMedium?.color, fontSize: 13)),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -254,16 +240,13 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        _buildFeatureIcon(Icons.bed, '$beds Hab'),
+                        _buildFeatureIcon(context, Icons.bed, '$beds Hab'),
                         const SizedBox(width: 16),
-                        _buildFeatureIcon(Icons.water_drop, water),
+                        _buildFeatureIcon(context, Icons.water_drop, water),
                       ],
                     ),
                     ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
+                      style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                       onPressed: () {},
                       child: const Text('Contactar'),
                     )
@@ -277,20 +260,19 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFeatureIcon(IconData icon, String label) {
+  Widget _buildFeatureIcon(BuildContext context, IconData icon, String label) {
+    final theme = Theme.of(context);
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceLight,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, size: 14, color: AppColors.accent),
+          decoration: BoxDecoration(color: theme.colorScheme.background, borderRadius: BorderRadius.circular(8)),
+          child: Icon(icon, size: 14, color: theme.colorScheme.primary),
         ),
         const SizedBox(width: 6),
-        Text(label, style: const TextStyle(color: AppColors.textLight, fontSize: 13, fontWeight: FontWeight.w500)),
+        Text(label, style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontSize: 13, fontWeight: FontWeight.w500)),
       ],
     );
   }
 }
+

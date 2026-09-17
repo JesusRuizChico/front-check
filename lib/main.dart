@@ -26,8 +26,11 @@ class ArrendamientoSeguroApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Arrendamiento Seguro',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
       routerConfig: AppRouter.router,
     );
   }
 }
+

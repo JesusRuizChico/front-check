@@ -5,23 +5,13 @@ import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
 
 void main() async {
-  // Asegura que los bindings de Flutter se inicialicen antes de Firebase
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Inicializamos Firebase con tus llaves exactas
-  await Firebase.initializeApp(
-    options: const FirebaseOptions(
-      apiKey: "AIzaSyCz1yRxB1tzz3BOVpZvW7cPhjr9KdD45FU",
-      authDomain: "habitcheck404.firebaseapp.com",
-      projectId: "habitcheck404",
-      storageBucket: "habitcheck404.firebasestorage.app",
-      messagingSenderId: "912301642109",
-      appId: "1:912301642109:web:5e50d6de08ceacacee7c14",
-    ),
-  );
+  // Inicializamos Firebase de forma nativa. 
+  // En Android buscará el archivo google-services.json automáticamente.
+  await Firebase.initializeApp();
 
   runApp(
-    // ProviderScope is required for Riverpod
     const ProviderScope(
       child: ArrendamientoSeguroApp(),
     ),
@@ -36,7 +26,7 @@ class ArrendamientoSeguroApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Arrendamiento Seguro',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme, // Premium dark theme with blues
+      theme: AppTheme.darkTheme,
       routerConfig: AppRouter.router,
     );
   }

@@ -1,17 +1,30 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:front_check/features/properties/data/propiedad_service.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:front_check/core/theme/app_colors.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class ArrendadorDashboardScreen extends StatefulWidget {
+  const ArrendadorDashboardScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<ArrendadorDashboardScreen> createState() => _ArrendadorDashboardScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
+  late Future<List<dynamic>> _propiedadesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarPropiedades();
+  }
+
+  void _cargarPropiedades() {
+    _propiedadesFuture = propiedadService.obtenerMisPropiedades();
+  }
+
   Future<void> _logout() async {
     // TODO: Llamar al endpoint /api/auth/logout del backend
     if (mounted) context.go('/');
@@ -23,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Inicio'),
+        title: const Text('Panel de Arrendador'),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout_rounded),
@@ -55,16 +68,89 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 30),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: Text('Propiedades Destacadas', style: theme.textTheme.titleLarge),
+                    child: Text('Tus Propiedades', style: theme.textTheme.titleLarge),
                   ),
                   const SizedBox(height: 16),
-                  _buildCatalogGrid(context),
+                  FutureBuilder<List<dynamic>>(
+                    future: _propiedadesFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(40.0),
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      }
+                      
+                      if (snapshot.hasError) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: Text(
+                              'Error al cargar tus propiedades: ${snapshot.error}',
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodyLarge?.copyWith(color: AppColors.danger),
+                            ),
+                          ),
+                        );
+                      }
+
+                      final propiedades = snapshot.data ?? [];
+
+                      if (propiedades.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: Text(
+                              'Aún no tienes propiedades publicadas. ¡Toca el botón "+" para comenzar!',
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                            ),
+                          ),
+                        );
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                        child: Column(
+                          children: propiedades.map((p) => Padding(
+                            padding: const EdgeInsets.only(bottom: 20.0),
+                            child: _buildPremiumCard(
+                              context: context,
+                              title: p['titulo'] ?? 'Sin título',
+                              price: '\$${p['precio']}',
+                              location: p['ubicacion'] ?? 'Sin ubicación',
+                              isVerified: false,
+                              imageUrl: (p['imagenes'] != null && p['imagenes'].isNotEmpty) 
+                                  ? p['imagenes'][0] 
+                                  : '',
+                              beds: p['habitaciones']?.toString() ?? '1',
+                              water: p['servicios'] ?? 'No especificado',
+                            ),
+                          )).toList(),
+                        ),
+                      );
+                    },
+                  ),
                   const SizedBox(height: 40),
                 ],
               ),
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          await context.push('/publicar-propiedad');
+          if (mounted) {
+            setState(() {
+              _cargarPropiedades();
+            });
+          }
+        },
+        icon: const Icon(Icons.add_home_work_rounded),
+        label: const Text('Publicar'),
       ),
     );
   }
@@ -87,7 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Text('Encuentra tu', style: theme.textTheme.bodyLarge?.copyWith(color: theme.textTheme.bodyMedium?.color)),
           const SizedBox(height: 4),
-          Text('Lugar Ideal', style: theme.textTheme.headlineMedium),
+          Text('Mis Propiedades', style: theme.textTheme.headlineMedium),
           const SizedBox(height: 20),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -99,7 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: TextField(
               style: TextStyle(color: theme.textTheme.bodyLarge?.color),
               decoration: InputDecoration(
-                hintText: 'Buscar por zona (ej. Vista Hermosa)',
+                hintText: 'Buscar mis propiedades...',
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -108,48 +194,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 prefixIcon: Icon(Icons.search, color: theme.colorScheme.primary),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCatalogGrid(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: Column(
-        children: [
-          _buildPremiumCard(
-            context: context,
-            title: 'Departamento Vista Hermosa',
-            price: '\$3,500',
-            location: 'Col. Vista Hermosa',
-            isVerified: true,
-            imageUrl: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=400',
-            beds: '2',
-            water: 'Alta',
-          ),
-          const SizedBox(height: 20),
-          _buildPremiumCard(
-            context: context,
-            title: 'Cuarto Estudiantil',
-            price: '\$1,800',
-            location: 'Cerca de UT',
-            isVerified: true,
-            imageUrl: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&q=80&w=400',
-            beds: '1',
-            water: 'Regular',
-          ),
-          const SizedBox(height: 20),
-          _buildPremiumCard(
-            context: context,
-            title: 'Edificio Centro',
-            price: '\$4,200',
-            location: 'Centro Histórico',
-            isVerified: false,
-            imageUrl: 'https://images.unsplash.com/photo-1460317442991-0ec209397118?auto=format&fit=crop&q=80&w=400',
-            beds: '3',
-            water: 'Alta',
           ),
         ],
       ),
@@ -183,17 +227,23 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                child: Image.network(
-                  imageUrl,
-                  height: 200,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    height: 200,
-                    color: theme.colorScheme.background,
-                    child: Center(child: Icon(Icons.image, size: 50, color: theme.colorScheme.onSurfaceVariant)),
-                  ),
-                ),
+                child: imageUrl.isEmpty
+                  ? Container(
+                      height: 200,
+                      color: theme.colorScheme.background,
+                      child: Center(child: Icon(Icons.image, size: 50, color: theme.colorScheme.onSurfaceVariant)),
+                    )
+                  : Image.network(
+                      imageUrl,
+                      height: 200,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 200,
+                        color: theme.colorScheme.background,
+                        child: Center(child: Icon(Icons.broken_image, size: 50, color: theme.colorScheme.onSurfaceVariant)),
+                      ),
+                    ),
               ),
               if (isVerified)
                 Positioned(

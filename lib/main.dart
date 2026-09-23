@@ -1,15 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Inicializamos Firebase de forma nativa. 
-  // En Android buscará el archivo google-services.json automáticamente.
-  await Firebase.initializeApp();
 
   runApp(
     const ProviderScope(

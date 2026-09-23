@@ -1,4 +1,4 @@
-﻿name: front_check
+name: front_check
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -41,6 +41,8 @@ dependencies:
   firebase_auth: ^6.7.0
   cloud_firestore: ^6.10.0
   http: ^1.6.0
+  image_picker: ^1.2.3
+  http_parser: ^4.1.2
 
 dev_dependencies:
   flutter_test:

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "912301642109",
+    "project_id": "habitcheck404",
+    "storage_bucket": "habitcheck404.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:912301642109:android:c1bba6b1114a974bee7c14",
+        "android_client_info": {
+          "package_name": "com.example.front_check"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANmkDNFQ9C2GIhNKb3Pvzz-Jm4Cmk_Ej0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

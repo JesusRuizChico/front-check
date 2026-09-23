@@ -4,8 +4,9 @@ import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
   runApp(
-    // ProviderScope is required for Riverpod
     const ProviderScope(
       child: ArrendamientoSeguroApp(),
     ),
@@ -20,8 +21,11 @@ class ArrendamientoSeguroApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Arrendamiento Seguro',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme, // Premium dark theme with blues
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
       routerConfig: AppRouter.router,
     );
   }
 }
+

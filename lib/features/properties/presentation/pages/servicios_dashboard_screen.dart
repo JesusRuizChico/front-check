@@ -4,14 +4,14 @@ import 'package:go_router/go_router.dart';
 
 import 'package:front_check/core/theme/app_colors.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class ServiciosDashboardScreen extends StatefulWidget {
+  const ServiciosDashboardScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<ServiciosDashboardScreen> createState() => _ServiciosDashboardScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _ServiciosDashboardScreenState extends State<ServiciosDashboardScreen> {
   Future<void> _logout() async {
     // TODO: Llamar al endpoint /api/auth/logout del backend
     if (mounted) context.go('/');
@@ -23,7 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Inicio'),
+        title: const Text('Panel de Servicios'),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout_rounded),
@@ -87,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Text('Encuentra tu', style: theme.textTheme.bodyLarge?.copyWith(color: theme.textTheme.bodyMedium?.color)),
           const SizedBox(height: 4),
-          Text('Lugar Ideal', style: theme.textTheme.headlineMedium),
+          Text('Mis Servicios', style: theme.textTheme.headlineMedium),
           const SizedBox(height: 20),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -99,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: TextField(
               style: TextStyle(color: theme.textTheme.bodyLarge?.color),
               decoration: InputDecoration(
-                hintText: 'Buscar por zona (ej. Vista Hermosa)',
+                hintText: 'Buscar mis servicios...',
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,

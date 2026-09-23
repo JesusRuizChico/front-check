@@ -1,7 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'dart:ui';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../../../../core/theme/app_colors.dart';
+import 'package:front_check/core/theme/app_colors.dart';
+import 'package:front_check/features/auth/data/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,46 +12,46 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
-  Future<void> _loginUser() async {
-    if (_emailController.text.trim().isEmpty || _passwordController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor llena todos los campos')),
-      );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isLoading = true);
 
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+      final response = await authService.login(
+        _emailController.text.trim(),
+        _passwordController.text,
       );
-
-      if (mounted) {
-        context.go('/home');
-      }
-    } on FirebaseAuthException catch (e) {
-      String message = 'Error de inicio de sesión';
-      if (e.code == 'user-not-found') message = 'Usuario no encontrado';
-      if (e.code == 'wrong-password') message = 'Contraseña incorrecta';
-      if (e.code == 'invalid-credential') message = 'Credenciales inválidas';
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+        final roles = response['rolesActivos'] as List<dynamic>? ?? [];
+        if (roles.contains('arrendador')) {
+          context.go('/dashboard-arrendador');
+        } else if (roles.contains('proveedor') || roles.contains('servicios')) {
+          context.go('/dashboard-servicios');
+        } else {
+          context.go('/home'); // Arrendatario por defecto
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        String errorMessage = 'Error al iniciar sesión. Revisa tus credenciales o tu conexión.';
+        if (e.toString().contains('CREDENCIALES_INVALIDAS') || e.toString().contains('Credenciales inválidas')) {
+          errorMessage = 'Las credenciales son inválidas';
+        } else if (e.toString().contains('CUENTA_BLOQUEADA') || e.toString().contains('Cuenta bloqueada')) {
+          errorMessage = e.toString().replaceAll('Exception: ', '');
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage), backgroundColor: AppColors.danger, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))));
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -63,90 +64,125 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          onPressed: () => context.go('/'),
         ),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 20),
-              Text(
-                'Bienvenido\nde vuelta',
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                      color: AppColors.textLight,
-                      height: 1.1,
-                    ),
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+                colors: [theme.colorScheme.surface, theme.colorScheme.background],
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Ingresa tus datos para continuar',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppColors.textMuted,
-                    ),
-              ),
-              const SizedBox(height: 48),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  hintText: 'Correo electrónico',
-                  prefixIcon: Icon(Icons.email_outlined),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  hintText: 'Contraseña',
-                  prefixIcon: Icon(Icons.lock_outline),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {
-                    // TODO: Recuperar contraseña
-                  },
-                  child: const Text('¿Olvidaste tu contraseña?'),
-                ),
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _loginUser,
-                  child: _isLoading 
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Ingresar'),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('¿No tienes cuenta?', style: TextStyle(color: AppColors.textMuted)),
-                  TextButton(
-                    onPressed: () {
-                      context.pushReplacement('/register');
-                    },
-                    child: const Text('Regístrate'),
-                  ),
-                ],
-              )
-            ],
+            ),
           ),
-        ),
+          Positioned(
+            top: MediaQuery.of(context).size.height * 0.1, left: -50,
+            child: Container(
+              width: 250, height: 250,
+              decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.primary.withOpacity(0.4)),
+              child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80), child: Container()),
+            ),
+          ),
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Icon(Icons.lock_person_rounded, size: 64, color: theme.textTheme.bodyLarge?.color),
+                      const SizedBox(height: 24),
+                      Text('Bienvenido de nuevo', style: theme.textTheme.headlineMedium, textAlign: TextAlign.center),
+                      const SizedBox(height: 8),
+                      Text('Inicia sesión para continuar', style: theme.textTheme.bodyMedium, textAlign: TextAlign.center),
+                      const SizedBox(height: 40),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                          child: Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surface.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(color: theme.colorScheme.onSurfaceVariant),
+                            ),
+                            child: Column(
+                              children: [
+                                TextFormField(
+                                  controller: _emailController,
+                                  keyboardType: TextInputType.emailAddress,
+                                  enabled: !_isLoading,
+                                  decoration: const InputDecoration(labelText: 'Correo Electrónico', prefixIcon: Icon(Icons.email_outlined)),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) return 'Ingresa tu correo';
+                                    if (!value.contains('@')) return 'Correo no válido';
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 20),
+                                TextFormField(
+                                  controller: _passwordController,
+                                  obscureText: _obscurePassword,
+                                  enabled: !_isLoading,
+                                  decoration: InputDecoration(
+                                    labelText: 'Contraseña',
+                                    prefixIcon: const Icon(Icons.lock_outline_rounded),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                                    ),
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) return 'Ingresa tu contraseña';
+                                    return null;
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(onPressed: _isLoading ? null : () {}, child: const Text('¿Olvidaste tu contraseña?')),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: _isLoading ? null : _login,
+                        child: _isLoading ? CircularProgressIndicator(color: theme.colorScheme.background, strokeWidth: 3) : const Text('Iniciar Sesión'),
+                      ),
+                      const SizedBox(height: 32),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('¿No tienes cuenta?', style: theme.textTheme.bodyMedium),
+                          TextButton(onPressed: _isLoading ? null : () => context.pushReplacement('/register'), child: const Text('Regístrate aquí')),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
+

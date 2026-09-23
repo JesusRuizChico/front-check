@@ -1,9 +1,8 @@
-﻿import 'dart:ui';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:front_check/core/theme/app_colors.dart';
+import 'package:front_check/features/auth/data/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -22,7 +21,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _acceptedPrivacy = false;
-  bool _isLandlord = false; 
+  String _selectedRole = 'arrendatario'; // 'arrendatario', 'arrendador', 'servicios' 
 
   Future<void> _register() async {
     if (!_acceptedPrivacy) {
@@ -33,26 +32,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: _emailController.text.trim(), password: _passwordController.text);
-      if (userCredential.user != null) {
-        await FirebaseFirestore.instance.collection('usuarios').doc(userCredential.user!.uid).set({
-          'nombre': _nameController.text.trim(),
-          'correo': _emailController.text.trim(),
-          'telefono': _phoneController.text.trim(),
-          'rol': _isLandlord ? 'arrendador' : 'arrendatario',
-          'fecha_registro': FieldValue.serverTimestamp(),
-          'ultimo_acceso': FieldValue.serverTimestamp(),
-        });
-        if (mounted) context.go('/home');
+      await authService.register(
+        _nameController.text.trim(),
+        _emailController.text.trim(),
+        _passwordController.text,
+        _phoneController.text.trim(),
+        _selectedRole,
+      );
+      if (mounted) {
+        // Redirigir a la pantalla de inicio de sesión
+        context.go('/login');
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Registro exitoso. Ahora puedes iniciar sesión.'), backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))));
       }
-    } on FirebaseAuthException catch (e) {
-      String message = 'Ocurrió un error al registrarte.';
-      if (e.code == 'network-request-failed') message = 'No tienes conexión a internet.';
-      else if (e.code == 'weak-password') message = 'La contraseña es muy débil. Usa al menos 6 caracteres.';
-      else if (e.code == 'email-already-in-use') message = 'Ya existe una cuenta con este correo.';
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: AppColors.danger, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Error de red. Revisa tu conexión.'), backgroundColor: AppColors.danger, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))));
+      if (mounted) {
+        String errorMessage = 'Error al registrarte. Intenta nuevamente.';
+        if (e.toString().contains('CORREO_YA_REGISTRADO')) {
+          errorMessage = 'El correo ya está en uso';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(errorMessage), 
+          backgroundColor: AppColors.danger, 
+          behavior: SnackBarBehavior.floating, 
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+        ));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -158,23 +162,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     children: [
                                       Expanded(
                                         child: GestureDetector(
-                                          onTap: _isLoading ? null : () => setState(() => _isLandlord = false),
+                                          onTap: _isLoading ? null : () => setState(() => _selectedRole = 'arrendatario'),
                                           child: AnimatedContainer(
                                             duration: const Duration(milliseconds: 300),
-                                            padding: const EdgeInsets.symmetric(vertical: 16),
-                                            decoration: BoxDecoration(color: !_isLandlord ? theme.colorScheme.primary : Colors.transparent, borderRadius: BorderRadius.circular(16)),
-                                            child: Text('Busco Cuarto', textAlign: TextAlign.center, style: TextStyle(color: !_isLandlord ? Colors.white : theme.textTheme.bodyMedium?.color, fontWeight: FontWeight.bold)),
+                                            padding: const EdgeInsets.symmetric(vertical: 8),
+                                            decoration: BoxDecoration(color: _selectedRole == 'arrendatario' ? theme.colorScheme.primary : Colors.transparent, borderRadius: BorderRadius.circular(16)),
+                                            child: Text('Busco Cuarto', textAlign: TextAlign.center, style: TextStyle(color: _selectedRole == 'arrendatario' ? Colors.white : theme.textTheme.bodyMedium?.color, fontWeight: FontWeight.bold, fontSize: 12)),
                                           ),
                                         ),
                                       ),
                                       Expanded(
                                         child: GestureDetector(
-                                          onTap: _isLoading ? null : () => setState(() => _isLandlord = true),
+                                          onTap: _isLoading ? null : () => setState(() => _selectedRole = 'arrendador'),
                                           child: AnimatedContainer(
                                             duration: const Duration(milliseconds: 300),
-                                            padding: const EdgeInsets.symmetric(vertical: 16),
-                                            decoration: BoxDecoration(color: _isLandlord ? theme.colorScheme.secondary : Colors.transparent, borderRadius: BorderRadius.circular(16)),
-                                            child: Text('Ofrezco Cuartos', textAlign: TextAlign.center, style: TextStyle(color: _isLandlord ? Colors.white : theme.textTheme.bodyMedium?.color, fontWeight: FontWeight.bold)),
+                                            padding: const EdgeInsets.symmetric(vertical: 8),
+                                            decoration: BoxDecoration(color: _selectedRole == 'arrendador' ? theme.colorScheme.secondary : Colors.transparent, borderRadius: BorderRadius.circular(16)),
+                                            child: Text('Ofrezco Cuartos', textAlign: TextAlign.center, style: TextStyle(color: _selectedRole == 'arrendador' ? Colors.white : theme.textTheme.bodyMedium?.color, fontWeight: FontWeight.bold, fontSize: 12)),
+                                          ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: GestureDetector(
+                                          onTap: _isLoading ? null : () => setState(() => _selectedRole = 'servicios'),
+                                          child: AnimatedContainer(
+                                            duration: const Duration(milliseconds: 300),
+                                            padding: const EdgeInsets.symmetric(vertical: 8),
+                                            decoration: BoxDecoration(color: _selectedRole == 'servicios' ? Colors.orange : Colors.transparent, borderRadius: BorderRadius.circular(16)),
+                                            child: Text('Servicios', textAlign: TextAlign.center, style: TextStyle(color: _selectedRole == 'servicios' ? Colors.white : theme.textTheme.bodyMedium?.color, fontWeight: FontWeight.bold, fontSize: 12)),
                                           ),
                                         ),
                                       ),

@@ -1,8 +1,8 @@
-﻿import 'dart:ui';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:front_check/core/theme/app_colors.dart';
+import 'package:front_check/features/auth/data/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,26 +24,31 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
+      final response = await authService.login(
+        _emailController.text.trim(),
+        _passwordController.text,
       );
-      if (mounted) context.go('/home');
-    } on FirebaseAuthException catch (e) {
-      String message = 'Ocurrió un error inesperado.';
-      if (e.code == 'network-request-failed') {
-        message = 'No tienes conexión a internet.';
-      } else if (e.code == 'user-not-found' || e.code == 'wrong-password' || e.code == 'invalid-credential') {
-        message = 'Correo o contraseña incorrectos.';
-      } else if (e.code == 'invalid-email') {
-        message = 'El correo electrónico no es válido.';
-      }
+      
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: AppColors.danger, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))));
+        final roles = response['rolesActivos'] as List<dynamic>? ?? [];
+        if (roles.contains('arrendador')) {
+          context.go('/dashboard-arrendador');
+        } else if (roles.contains('proveedor') || roles.contains('servicios')) {
+          context.go('/dashboard-servicios');
+        } else {
+          context.go('/home'); // Arrendatario por defecto
+        }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Error de red. Revisa tu conexión.'), backgroundColor: AppColors.danger, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))));
+        String errorMessage = 'Error al iniciar sesión. Revisa tus credenciales o tu conexión.';
+        if (e.toString().contains('CREDENCIALES_INVALIDAS') || e.toString().contains('Credenciales inválidas')) {
+          errorMessage = 'Las credenciales son inválidas';
+        } else if (e.toString().contains('CUENTA_BLOQUEADA') || e.toString().contains('Cuenta bloqueada')) {
+          errorMessage = e.toString().replaceAll('Exception: ', '');
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage), backgroundColor: AppColors.danger, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

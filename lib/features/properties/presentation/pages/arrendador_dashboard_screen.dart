@@ -39,7 +39,13 @@ class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
         title: const Text('Panel de Arrendador'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.account_circle_outlined),
+            tooltip: 'Mi Perfil',
+            onPressed: () => context.push('/perfil'),
+          ),
+          IconButton(
             icon: const Icon(Icons.logout_rounded),
+            tooltip: 'Cerrar sesión',
             onPressed: _logout,
           ),
         ],

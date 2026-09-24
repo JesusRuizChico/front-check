@@ -161,6 +161,48 @@ class ApiClient {
     }
   }
 
+
+  /// Realiza una petición DELETE enviando la cookie de sesión y el token CSRF
+  Future<Map<String, dynamic>?> delete(String path) async {
+    if (_csrfToken == null) {
+      await fetchCsrf();
+    }
+
+    final headers = <String, String>{
+      'Accept': 'application/json',
+    };
+    
+    if (_cookie != null) {
+      headers['Cookie'] = _cookie!;
+    }
+    
+    if (_csrfToken != null && _csrfHeaderName != null) {
+      headers[_csrfHeaderName!] = _csrfToken!;
+    }
+
+    final response = await _client.delete(
+      Uri.parse('$_baseUrl$path'),
+      headers: headers,
+    );
+
+    _updateCookie(response);
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (response.body.isEmpty) return null;
+      return jsonDecode(response.body);
+    } else {
+      try {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['mensaje'] ?? 'Error desconocido');
+      } catch (e) {
+        if (e is FormatException) {
+          throw Exception('Failed to delete data: ${response.statusCode}');
+        }
+        rethrow;
+      }
+    }
+  }
+
   void _updateCookie(http.Response response) {
     String? rawCookie = response.headers['set-cookie'];
     if (rawCookie != null) {

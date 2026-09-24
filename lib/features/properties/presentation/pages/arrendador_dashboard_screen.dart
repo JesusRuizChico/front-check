@@ -119,14 +119,16 @@ class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
                             child: _buildPremiumCard(
                               context: context,
                               title: p['titulo'] ?? 'Sin título',
-                              price: '\$${p['precio']}',
-                              location: p['ubicacion'] ?? 'Sin ubicación',
-                              isVerified: false,
+                              price: '\$${p['precioMensual']}',
+                              location: '${p['colonia']}, ${p['municipio']}, ${p['estadoUbicacion']}',
+                              isVerified: p['verificada'] ?? false,
                               imageUrl: (p['imagenes'] != null && p['imagenes'].isNotEmpty) 
                                   ? p['imagenes'][0] 
                                   : '',
                               beds: p['habitaciones']?.toString() ?? '1',
-                              water: p['servicios'] ?? 'No especificado',
+                              water: (p['servicios'] != null && p['servicios'].isNotEmpty) 
+                                  ? p['servicios'][0] 
+                                  : 'No especificado',
                             ),
                           )).toList(),
                         ),

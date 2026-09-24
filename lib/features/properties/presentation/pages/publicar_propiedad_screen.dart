@@ -17,9 +17,15 @@ class _PublicarPropiedadScreenState extends State<PublicarPropiedadScreen> {
   final _tituloController = TextEditingController();
   final _descripcionController = TextEditingController();
   final _precioController = TextEditingController();
-  final _ubicacionController = TextEditingController();
-  final _habitacionesController = TextEditingController(text: '1');
-  final _serviciosController = TextEditingController();
+  
+  // Direccion
+  final _calleController = TextEditingController();
+  final _numeroExtController = TextEditingController();
+  final _numeroIntController = TextEditingController();
+  final _coloniaController = TextEditingController();
+  final _municipioController = TextEditingController();
+  final _estadoUbController = TextEditingController();
+  final _codigoPostalController = TextEditingController();
 
   final ImagePicker _picker = ImagePicker();
   List<XFile> _imagenes = [];
@@ -75,10 +81,14 @@ class _PublicarPropiedadScreenState extends State<PublicarPropiedadScreen> {
       await propiedadService.publicarPropiedad(
         titulo: _tituloController.text.trim(),
         descripcion: _descripcionController.text.trim(),
-        precio: _precioController.text.trim(),
-        ubicacion: _ubicacionController.text.trim(),
-        habitaciones: _habitacionesController.text.trim(),
-        servicios: _serviciosController.text.trim(),
+        precioMensual: _precioController.text.trim(),
+        calle: _calleController.text.trim(),
+        numeroExterior: _numeroExtController.text.trim(),
+        numeroInterior: _numeroIntController.text.trim(),
+        colonia: _coloniaController.text.trim(),
+        municipio: _municipioController.text.trim(),
+        estadoUbicacion: _estadoUbController.text.trim(),
+        codigoPostal: _codigoPostalController.text.trim(),
         imagenes: _imagenes,
       );
 
@@ -114,9 +124,13 @@ class _PublicarPropiedadScreenState extends State<PublicarPropiedadScreen> {
     _tituloController.dispose();
     _descripcionController.dispose();
     _precioController.dispose();
-    _ubicacionController.dispose();
-    _habitacionesController.dispose();
-    _serviciosController.dispose();
+    _calleController.dispose();
+    _numeroExtController.dispose();
+    _numeroIntController.dispose();
+    _coloniaController.dispose();
+    _municipioController.dispose();
+    _estadoUbController.dispose();
+    _codigoPostalController.dispose();
     super.dispose();
   }
 
@@ -153,11 +167,14 @@ class _PublicarPropiedadScreenState extends State<PublicarPropiedadScreen> {
                     decoration: const InputDecoration(labelText: 'Precio (Mensual) *', prefixText: '\$'),
                     validator: (value) => value == null || value.isEmpty ? 'El precio es obligatorio' : null,
                   ),
+                  const SizedBox(height: 32),
+
+                  Text('Dirección', style: theme.textTheme.headlineSmall),
                   const SizedBox(height: 16),
-                  
+
                   TextFormField(
-                    controller: _ubicacionController,
-                    decoration: const InputDecoration(labelText: 'Ubicación *', hintText: 'Ej. Col. Vista Hermosa'),
+                    controller: _calleController,
+                    decoration: const InputDecoration(labelText: 'Calle *'),
                     validator: (value) => value == null || value.isEmpty ? 'Requerido' : null,
                   ),
                   const SizedBox(height: 16),
@@ -166,23 +183,69 @@ class _PublicarPropiedadScreenState extends State<PublicarPropiedadScreen> {
                     children: [
                       Expanded(
                         child: TextFormField(
-                          controller: _habitacionesController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(labelText: 'Habitaciones *'),
+                          controller: _numeroExtController,
+                          decoration: const InputDecoration(labelText: 'Num. Ext *'),
                           validator: (value) => value == null || value.isEmpty ? 'Requerido' : null,
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: TextFormField(
-                          controller: _serviciosController,
-                          decoration: const InputDecoration(labelText: 'Servicios', hintText: 'Ej. Agua Alta'),
+                          controller: _numeroIntController,
+                          decoration: const InputDecoration(labelText: 'Num. Int (Opcional)'),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _coloniaController,
+                          decoration: const InputDecoration(labelText: 'Colonia *'),
+                          validator: (value) => value == null || value.isEmpty ? 'Requerido' : null,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _codigoPostalController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(labelText: 'Código Postal *'),
+                          validator: (value) => value == null || value.isEmpty ? 'Requerido' : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _municipioController,
+                          decoration: const InputDecoration(labelText: 'Municipio *'),
+                          validator: (value) => value == null || value.isEmpty ? 'Requerido' : null,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _estadoUbController,
+                          decoration: const InputDecoration(labelText: 'Estado *', hintText: 'Ej. Jalisco'),
+                          validator: (value) => value == null || value.isEmpty ? 'Requerido' : null,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 32),
                   
+                  Text('Más detalles', style: theme.textTheme.headlineSmall),
+                  const SizedBox(height: 16),
+
                   TextFormField(
                     controller: _descripcionController,
                     maxLines: 3,
@@ -231,9 +294,6 @@ class _PublicarPropiedadScreenState extends State<PublicarPropiedadScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 clipBehavior: Clip.antiAlias,
-                                // Future builder or Network image if we want web support.
-                                // For web, XFile.path cannot be used directly with File.
-                                // Instead we use network image for web.
                                 child: Image.network(
                                   _imagenes[index].path,
                                   fit: BoxFit.cover,

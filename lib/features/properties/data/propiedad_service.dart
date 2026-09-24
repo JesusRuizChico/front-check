@@ -9,19 +9,27 @@ class PropiedadService {
   Future<void> publicarPropiedad({
     required String titulo,
     required String descripcion,
-    required String precio,
-    required String ubicacion,
-    required String habitaciones,
-    required String servicios,
+    required String precioMensual,
+    required String calle,
+    required String numeroExterior,
+    String? numeroInterior,
+    required String colonia,
+    required String municipio,
+    required String estadoUbicacion,
+    required String codigoPostal,
     required List<XFile> imagenes,
   }) async {
     final fields = {
       'titulo': titulo,
       'descripcion': descripcion,
-      'precio': precio,
-      'ubicacion': ubicacion,
-      'habitaciones': habitaciones,
-      'servicios': servicios,
+      'precioMensual': precioMensual,
+      'calle': calle,
+      'numeroExterior': numeroExterior,
+      if (numeroInterior != null && numeroInterior.isNotEmpty) 'numeroInterior': numeroInterior,
+      'colonia': colonia,
+      'municipio': municipio,
+      'estadoUbicacion': estadoUbicacion,
+      'codigoPostal': codigoPostal,
     };
 
     final files = <http.MultipartFile>[];

@@ -6,6 +6,7 @@ import '../../features/properties/presentation/pages/home_screen.dart';
 import '../../features/properties/presentation/pages/arrendador_dashboard_screen.dart';
 import '../../features/properties/presentation/pages/servicios_dashboard_screen.dart';
 import '../../features/properties/presentation/pages/publicar_propiedad_screen.dart';
+import '../../features/profile/presentation/pages/perfil_screen.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -38,6 +39,10 @@ class AppRouter {
       GoRoute(
         path: '/publicar-propiedad',
         builder: (context, state) => const PublicarPropiedadScreen(),
+      ),
+      GoRoute(
+        path: '/perfil',
+        builder: (context, state) => const PerfilScreen(),
       ),
     ],
   );

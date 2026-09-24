@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:front_check/core/theme/app_colors.dart';
 import 'package:front_check/features/auth/data/auth_service.dart';
+import 'package:front_check/features/auth/presentation/widgets/especialidades_selector.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -21,7 +22,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _acceptedPrivacy = false;
-  String _selectedRole = 'arrendatario'; // 'arrendatario', 'arrendador', 'servicios' 
+  String _selectedRole = 'arrendatario'; // 'arrendatario', 'arrendador', 'servicios'
+
+  // Estado de especialidades (solo relevante para rol 'servicios')
+  List<String> _especialidadesSeleccionadas = [];
+  bool _mostrarErrorEspecialidad = false;
 
   Future<void> _register() async {
     if (!_acceptedPrivacy) {
@@ -29,6 +34,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
     if (!_formKey.currentState!.validate()) return;
+
+    // Escenario 2: Validar especialidad si el rol es 'servicios'
+    if (_selectedRole == 'servicios' && _especialidadesSeleccionadas.isEmpty) {
+      setState(() => _mostrarErrorEspecialidad = true);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text('Debes seleccionar al menos una especialidad.'),
+        backgroundColor: AppColors.danger,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ));
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
@@ -38,9 +56,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _passwordController.text,
         _phoneController.text.trim(),
         _selectedRole,
+        especialidades: _especialidadesSeleccionadas,
       );
       if (mounted) {
-        // Redirigir a la pantalla de inicio de sesión
+        // Escenario 1: Registro exitoso → redirigir a login
         context.go('/login');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Registro exitoso. Ahora puedes iniciar sesión.'), backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))));
       }
@@ -184,7 +203,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       ),
                                       Expanded(
                                         child: GestureDetector(
-                                          onTap: _isLoading ? null : () => setState(() => _selectedRole = 'servicios'),
+                                          onTap: _isLoading ? null : () => setState(() {
+                                            _selectedRole = 'servicios';
+                                            // Al cambiar de rol, limpiamos el error de especialidad
+                                            _mostrarErrorEspecialidad = false;
+                                          }),
                                           child: AnimatedContainer(
                                             duration: const Duration(milliseconds: 300),
                                             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -195,6 +218,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       ),
                                     ],
                                   ),
+                                ),
+                                // Selector de especialidades — solo visible para rol 'servicios'
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 350),
+                                  transitionBuilder: (child, animation) => SizeTransition(
+                                    sizeFactor: animation,
+                                    axisAlignment: -1,
+                                    child: FadeTransition(opacity: animation, child: child),
+                                  ),
+                                  child: _selectedRole == 'servicios'
+                                      ? Padding(
+                                          key: const ValueKey('selector-especialidades'),
+                                          padding: const EdgeInsets.only(top: 20),
+                                          child: EspecialidadesSelector(
+                                            seleccionadas: _especialidadesSeleccionadas,
+                                            mostrarError: _mostrarErrorEspecialidad,
+                                            onChanged: (nuevas) => setState(() {
+                                              _especialidadesSeleccionadas = nuevas;
+                                              // Limpia el error en cuanto selecciona algo
+                                              if (nuevas.isNotEmpty) _mostrarErrorEspecialidad = false;
+                                            }),
+                                          ),
+                                        )
+                                      : const SizedBox.shrink(key: ValueKey('sin-selector')),
                                 ),
                                 const SizedBox(height: 24),
                                 TextFormField(

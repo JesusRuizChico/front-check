@@ -1,7 +1,9 @@
+import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/camera_helper.dart';
 import '../../data/perfil_service.dart';
 
 /// Pantalla de Gestión de Perfil de Usuario
@@ -24,6 +26,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   // Estado del perfil del usuario
   Map<String, dynamic>? _perfil;
+  Uint8List? _previewBytes;
+  int _cacheBuster = DateTime.now().millisecondsSinceEpoch;
   bool _isLoading = true;
   bool _isProcessingPhoto = false;
   String? _errorMessage;
@@ -64,15 +68,25 @@ class _PerfilScreenState extends State<PerfilScreen> {
     Navigator.of(context).pop(); // Cerrar el modal de opciones
 
     try {
-      final XFile? imagenSeleccionada = await _picker.pickImage(
-        source: source,
-        imageQuality: 85, // Optimización de compresión sin pérdida visual
-      );
+      final XFile? imagenSeleccionada;
+      if (source == ImageSource.camera) {
+        imagenSeleccionada = await CameraHelper.tomarFotoConCamara(context);
+      } else {
+        imagenSeleccionada = await _picker.pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 85, // Optimización de compresión sin pérdida visual
+        );
+      }
 
       // Si el usuario canceló la selección, no realizamos ninguna acción
       if (imagenSeleccionada == null) return;
 
-      setState(() => _isProcessingPhoto = true);
+      final bytes = await imagenSeleccionada.readAsBytes();
+
+      setState(() {
+        _isProcessingPhoto = true;
+        _previewBytes = bytes; // Reflejar en la UI inmediatamente
+      });
 
       // Enviamos la imagen al backend a través del servicio
       final perfilActualizado = await perfilService.actualizarFotoPerfil(imagenSeleccionada);
@@ -81,6 +95,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
         setState(() {
           // Escenario 1: Actualizar la foto en pantalla de inmediato
           _perfil = perfilActualizado;
+          _cacheBuster = DateTime.now().millisecondsSinceEpoch;
           _isProcessingPhoto = false;
         });
 
@@ -103,7 +118,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
       // Escenario 2: Mensaje de error si el archivo no es soportado o excede 5 MB
       // La foto anterior se conserva intacta
       if (mounted) {
-        setState(() => _isProcessingPhoto = false);
+        setState(() {
+          _isProcessingPhoto = false;
+          _previewBytes = null; // Revertir vista previa en caso de error
+        });
 
         final mensajeLimpio = error.toString().replaceAll('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
@@ -164,12 +182,14 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
       if (mounted) {
         setState(() {
+          _previewBytes = null;
           // Escenario 3: La foto pasa a ser null y se muestra el avatar predeterminado
           if (perfilActualizado != null) {
             _perfil = perfilActualizado;
           } else if (_perfil != null) {
             _perfil!['fotoPerfil'] = null;
           }
+          _cacheBuster = DateTime.now().millisecondsSinceEpoch;
           _isProcessingPhoto = false;
         });
 
@@ -580,9 +600,28 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   /// Construye la imagen del avatar o el avatar predeterminado
   Widget _buildAvatarImage(String? fotoUrl, String nombre) {
+    // 1. Si el usuario acaba de seleccionar una foto, mostrar la vista previa en memoria de inmediato
+    if (_previewBytes != null) {
+      return Image.memory(
+        _previewBytes!,
+        fit: BoxFit.cover,
+      );
+    }
+
+    // 2. Si hay una URL en la base de datos, cargarla asegurando dominio completo y cache busting
     if (fotoUrl != null && fotoUrl.trim().isNotEmpty) {
+      String resolvedUrl = fotoUrl.trim();
+      if (!resolvedUrl.startsWith('http://') && !resolvedUrl.startsWith('https://')) {
+        resolvedUrl = 'http://localhost:8080${resolvedUrl.startsWith('/') ? '' : '/'}$resolvedUrl';
+      }
+
+      final uri = Uri.parse(resolvedUrl);
+      final cacheBustedUrl = uri.replace(
+        queryParameters: {...uri.queryParameters, 't': '$_cacheBuster'},
+      ).toString();
+
       return Image.network(
-        fotoUrl,
+        cacheBustedUrl,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
           // Si falla la carga de la imagen de red, mostramos el avatar predeterminado
@@ -594,6 +633,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
         },
       );
     }
+
     // Escenario 3: Avatar predeterminado cuando no hay foto asignada
     return _buildDefaultAvatar(nombre);
   }

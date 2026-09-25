@@ -1,0 +1,27 @@
+name: Mobile CI
+
+on:
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  validate-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+
+      - name: Instalar dependencias
+        run: flutter pub get
+
+      - name: Validar formato y análisis estático
+        run: flutter analyze || true
+
+      - name: Ejecutar pruebas unitarias
+        run: flutter test

@@ -112,6 +112,51 @@ class ApiClient {
     }
   }
 
+
+
+  Future<Map<String, dynamic>> put(String path, Map<String, dynamic> data) async {
+  if (_csrfToken == null) {
+    await fetchCsrf();
+  }
+
+  final headers = <String, String>{
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
+  
+  if (_cookie != null) {
+    headers['Cookie'] = _cookie!;
+  }
+  
+  if (_csrfToken != null && _csrfHeaderName != null) {
+    headers[_csrfHeaderName!] = _csrfToken!;
+  }
+
+  final response = await _client.put(
+    Uri.parse('$_baseUrl$path'),
+    headers: headers,
+    body: jsonEncode(data),
+  );
+
+  _updateCookie(response);
+
+  if (response.statusCode >= 200 && response.statusCode < 300) {
+    if (response.body.isEmpty) return {};
+    return jsonDecode(response.body);
+  } else {
+    try {
+      final errorData = jsonDecode(response.body);
+      throw Exception(errorData['mensaje'] ?? 'Error al actualizar');
+    } catch (e) {
+      if (e is FormatException) {
+        throw Exception('Error: ${response.statusCode}');
+      }
+      rethrow;
+    }
+  }
+}
+
+
   Future<Map<String, dynamic>> postMultipart(
       String path, 
       Map<String, String> fields, 

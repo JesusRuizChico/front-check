@@ -26,11 +26,16 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Inicio'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.person_rounded),
+            onPressed: () => context.push('/account'),
+          ),
+          IconButton(
             icon: const Icon(Icons.logout_rounded),
             onPressed: _logout,
           ),
         ],
       ),
+
       body: Stack(
         children: [
           // Fondo oscuro/claro

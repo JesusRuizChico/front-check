@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:front_check/core/theme/app_colors.dart';
+import 'package:front_check/features/properties/data/propiedad_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,6 +13,18 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  late Future<List<dynamic>> _catalogoFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarCatalogo();
+  }
+
+  void _cargarCatalogo() {
+    _catalogoFuture = propiedadService.obtenerCatalogoDisponible();
+  }
+
   Future<void> _logout() async {
     // TODO: Llamar al endpoint /api/auth/logout del backend
     if (mounted) context.go('/');
@@ -20,11 +33,16 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Inicio'),
         actions: [
+          IconButton(
+            tooltip: 'Mensajes',
+            icon: const Icon(Icons.chat_bubble_outline_rounded),
+            onPressed: () => context.push('/mensajes'),
+          ),
           IconButton(
             icon: const Icon(Icons.person_rounded),
             onPressed: () => context.push('/account'),
@@ -35,22 +53,27 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-
       body: Stack(
         children: [
           // Fondo oscuro/claro
           Container(color: theme.colorScheme.background),
-          
+
           // Desenfoque de acento superior
           Positioned(
-            top: -100, right: -50,
+            top: -100,
+            right: -50,
             child: Container(
-              width: 300, height: 300,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.primary.withOpacity(0.2)),
-              child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80), child: Container()),
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: theme.colorScheme.primary.withOpacity(0.2)),
+              child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+                  child: Container()),
             ),
           ),
-          
+
           SafeArea(
             child: SingleChildScrollView(
               child: Column(
@@ -60,7 +83,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 30),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: Text('Propiedades Destacadas', style: theme.textTheme.titleLarge),
+                    child: Text('Propiedades Disponibles',
+                        style: theme.textTheme.titleLarge),
                   ),
                   const SizedBox(height: 16),
                   _buildCatalogGrid(context),
@@ -84,13 +108,18 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: theme.colorScheme.onSurfaceVariant),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10)),
+          BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 10)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Encuentra tu', style: theme.textTheme.bodyLarge?.copyWith(color: theme.textTheme.bodyMedium?.color)),
+          Text('Encuentra tu',
+              style: theme.textTheme.bodyLarge
+                  ?.copyWith(color: theme.textTheme.bodyMedium?.color)),
           const SizedBox(height: 4),
           Text('Lugar Ideal', style: theme.textTheme.headlineMedium),
           const SizedBox(height: 20),
@@ -110,7 +139,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 focusedBorder: InputBorder.none,
                 fillColor: Colors.transparent,
                 filled: false,
-                prefixIcon: Icon(Icons.search, color: theme.colorScheme.primary),
+                prefixIcon:
+                    Icon(Icons.search, color: theme.colorScheme.primary),
               ),
             ),
           ),
@@ -120,65 +150,98 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCatalogGrid(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: Column(
-        children: [
-          _buildPremiumCard(
-            context: context,
-            title: 'Departamento Vista Hermosa',
-            price: '\$3,500',
-            location: 'Col. Vista Hermosa',
-            isVerified: true,
-            imageUrl: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=400',
-            beds: '2',
-            water: 'Alta',
+    return FutureBuilder<List<dynamic>>(
+      future: _catalogoFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.all(40),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                Text(
+                  'No se pudieron cargar las propiedades.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: AppColors.danger,
+                      ),
+                ),
+                TextButton(
+                  onPressed: () => setState(_cargarCatalogo),
+                  child: const Text('Volver a intentar'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final propiedades = snapshot.data ?? [];
+        if (propiedades.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(
+              child: Text('Todavía no hay propiedades disponibles.'),
+            ),
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            children: propiedades.map((item) {
+              final propiedad = Map<String, dynamic>.from(item as Map);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: _buildPremiumCard(context, propiedad),
+              );
+            }).toList(),
           ),
-          const SizedBox(height: 20),
-          _buildPremiumCard(
-            context: context,
-            title: 'Cuarto Estudiantil',
-            price: '\$1,800',
-            location: 'Cerca de UT',
-            isVerified: true,
-            imageUrl: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&q=80&w=400',
-            beds: '1',
-            water: 'Regular',
-          ),
-          const SizedBox(height: 20),
-          _buildPremiumCard(
-            context: context,
-            title: 'Edificio Centro',
-            price: '\$4,200',
-            location: 'Centro Histórico',
-            isVerified: false,
-            imageUrl: 'https://images.unsplash.com/photo-1460317442991-0ec209397118?auto=format&fit=crop&q=80&w=400',
-            beds: '3',
-            water: 'Alta',
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildPremiumCard({
-    required BuildContext context,
-    required String title,
-    required String price,
-    required String location,
-    required bool isVerified,
-    required String imageUrl,
-    required String beds,
-    required String water,
-  }) {
+  Widget _buildPremiumCard(
+    BuildContext context,
+    Map<String, dynamic> propiedad,
+  ) {
     final theme = Theme.of(context);
+    final imagenes = propiedad['imagenes'] as List? ?? const [];
+    final imageUrl = imagenes.isEmpty ? null : imagenes.first?.toString();
+    final servicios = (propiedad['servicios'] as List? ?? const [])
+        .map((servicio) => servicio.toString())
+        .toList();
+    final ubicacion = [
+      propiedad['colonia'],
+      propiedad['municipio'],
+      propiedad['estadoUbicacion'],
+    ]
+        .where((parte) => parte != null && parte.toString().trim().isNotEmpty)
+        .map((parte) => parte.toString())
+        .join(', ');
+    final precio = propiedad['precioMensual'];
+    final precioTexto = precio is num
+        ? '\$${precio.toStringAsFixed(2)}'
+        : precio == null
+            ? 'Precio por consultar'
+            : '\$$precio';
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: theme.colorScheme.onSurfaceVariant),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8)),
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 8)),
         ],
       ),
       child: Column(
@@ -187,30 +250,51 @@ class _HomeScreenState extends State<HomeScreen> {
           Stack(
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                child: Image.network(
-                  imageUrl,
-                  height: 200,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    height: 200,
-                    color: theme.colorScheme.background,
-                    child: Center(child: Icon(Icons.image, size: 50, color: theme.colorScheme.onSurfaceVariant)),
-                  ),
-                ),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(20)),
+                child: imageUrl == null || imageUrl.isEmpty
+                    ? Container(
+                        height: 200,
+                        color: theme.colorScheme.background,
+                        child: Center(
+                            child: Icon(Icons.image,
+                                size: 50,
+                                color: theme.colorScheme.onSurfaceVariant)),
+                      )
+                    : Image.network(
+                        imageUrl,
+                        height: 200,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          height: 200,
+                          color: theme.colorScheme.background,
+                          child: Center(
+                              child: Icon(Icons.broken_image,
+                                  size: 50,
+                                  color: theme.colorScheme.onSurfaceVariant)),
+                        ),
+                      ),
               ),
-              if (isVerified)
+              if (propiedad['verificada'] == true)
                 Positioned(
-                  top: 16, left: 16,
+                  top: 16,
+                  left: 16,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(color: AppColors.success.withOpacity(0.9), borderRadius: BorderRadius.circular(12)),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                        color: AppColors.success.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(12)),
                     child: Row(
                       children: const [
                         Icon(Icons.verified, color: Colors.white, size: 14),
                         SizedBox(width: 4),
-                        Text('Verificada', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                        Text('Verificada',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ),
@@ -225,32 +309,73 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(child: Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textTheme.bodyLarge?.color), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                    Text(price, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
+                    Expanded(
+                        child: Text(
+                            propiedad['titulo']?.toString() ?? 'Propiedad',
+                            style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: theme.textTheme.bodyLarge?.color),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis)),
+                    Text(precioTexto,
+                        style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary)),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.location_on, size: 14, color: theme.textTheme.bodyMedium?.color),
+                    Icon(Icons.location_on,
+                        size: 14, color: theme.textTheme.bodyMedium?.color),
                     const SizedBox(width: 4),
-                    Text(location, style: TextStyle(color: theme.textTheme.bodyMedium?.color, fontSize: 13)),
+                    Expanded(
+                        child: Text(ubicacion,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                color: theme.textTheme.bodyMedium?.color,
+                                fontSize: 13))),
                   ],
                 ),
+                if ((propiedad['descripcion']?.toString() ?? '')
+                    .trim()
+                    .isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    propiedad['descripcion'].toString(),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ],
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        _buildFeatureIcon(context, Icons.bed, '$beds Hab'),
-                        const SizedBox(width: 16),
-                        _buildFeatureIcon(context, Icons.water_drop, water),
-                      ],
+                    Expanded(
+                      child: Text(
+                        servicios.isEmpty
+                            ? 'Sin servicios especificados'
+                            : servicios.join(' · '),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall,
+                      ),
                     ),
                     ElevatedButton(
-                      style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12))),
+                      onPressed: propiedad['idPropiedad'] == null
+                          ? null
+                          : () => context.push(
+                                '/mensajes/propiedad/${propiedad['idPropiedad']}',
+                              ),
                       child: const Text('Contactar'),
                     )
                   ],
@@ -262,20 +387,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  Widget _buildFeatureIcon(BuildContext context, IconData icon, String label) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(color: theme.colorScheme.background, borderRadius: BorderRadius.circular(8)),
-          child: Icon(icon, size: 14, color: theme.colorScheme.primary),
-        ),
-        const SizedBox(width: 6),
-        Text(label, style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontSize: 13, fontWeight: FontWeight.w500)),
-      ],
-    );
-  }
 }
-

@@ -7,6 +7,9 @@ import '../../features/properties/presentation/pages/arrendador_dashboard_screen
 import '../../features/properties/presentation/pages/servicios_dashboard_screen.dart';
 import '../../features/properties/presentation/pages/publicar_propiedad_screen.dart';
 import '../../features/account/presentation/pages/account_screen.dart';
+import '../../features/messages/data/chat_service.dart';
+import '../../features/messages/presentation/pages/chat_screen.dart';
+import '../../features/messages/presentation/pages/conversations_screen.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -44,7 +47,25 @@ class AppRouter {
         path: '/account',
         builder: (context, state) => const AccountScreen(),
       ),
+      GoRoute(
+        path: '/mensajes',
+        builder: (context, state) => const ConversationsScreen(),
+      ),
+      GoRoute(
+        path: '/mensajes/propiedad/:idPropiedad',
+        builder: (context, state) => ChatScreen.forProperty(
+          propertyId: int.parse(state.pathParameters['idPropiedad']!),
+        ),
+      ),
+      GoRoute(
+        path: '/mensajes/:idConversacion',
+        builder: (context, state) => ChatScreen.forConversation(
+          conversationId: int.parse(state.pathParameters['idConversacion']!),
+          initialConversation: state.extra is ConversationSummary
+              ? state.extra as ConversationSummary
+              : null,
+        ),
+      ),
     ],
   );
 }
-

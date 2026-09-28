@@ -10,6 +10,20 @@ class ApiClient {
 
   final _client = getClient();
 
+  String? get csrfToken => _csrfToken;
+
+  String get webSocketCookieHeader => _cookie ?? '';
+
+  Uri get webSocketUri {
+    final apiUri = Uri.parse(_baseUrl);
+    return apiUri.replace(
+      scheme: apiUri.scheme == 'https' ? 'wss' : 'ws',
+      path: '/ws',
+      query: null,
+      fragment: null,
+    );
+  }
+
   /// Obtiene o actualiza el token CSRF y la cookie asociada
   Future<void> fetchCsrf() async {
     final response = await _client.get(
@@ -207,13 +221,26 @@ class ApiClient {
   }
 
   void _updateCookie(http.Response response) {
-    String? rawCookie = response.headers['set-cookie'];
-    if (rawCookie != null) {
-      // Manejar múltiples cookies si vienen separadas por coma (ej. JSESSIONID y XSRF-TOKEN)
-      // En Flutter web/desktop hay que extraer bien el JSESSIONID.
-      // Por simplicidad en este cliente tomamos todo el string.
-      _cookie = rawCookie;
+    final rawCookie = response.headers['set-cookie'];
+    if (rawCookie == null) return;
+
+    final cookies = <String, String>{};
+    for (final cookie in (_cookie ?? '').split(';')) {
+      final separator = cookie.indexOf('=');
+      if (separator > 0) {
+        cookies[cookie.substring(0, separator).trim()] =
+            cookie.substring(separator + 1).trim();
+      }
     }
+    for (final cookie in rawCookie.split(RegExp(r',\s*(?=[^;,]+=)'))) {
+      final pair = cookie.split(';').first.trim();
+      final separator = pair.indexOf('=');
+      if (separator > 0) {
+        cookies[pair.substring(0, separator).trim()] =
+            pair.substring(separator + 1).trim();
+      }
+    }
+    _cookie = cookies.entries.map((cookie) => '${cookie.key}=${cookie.value}').join('; ');
   }
 }
 

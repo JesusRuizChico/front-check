@@ -176,6 +176,15 @@ class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
           Text('Encuentra tu', style: theme.textTheme.bodyLarge?.copyWith(color: theme.textTheme.bodyMedium?.color)),
           const SizedBox(height: 4),
           Text('Mis Propiedades', style: theme.textTheme.headlineMedium),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () => context.push('/mensajes'),
+              icon: const Icon(Icons.forum_outlined),
+              label: const Text('Ver mensajes y responder'),
+            ),
+          ),
           const SizedBox(height: 20),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -285,21 +294,12 @@ class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
                   ],
                 ),
                 const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 8,
                   children: [
-                    Row(
-                      children: [
-                        _buildFeatureIcon(context, Icons.bed, '$beds Hab'),
-                        const SizedBox(width: 16),
-                        _buildFeatureIcon(context, Icons.water_drop, water),
-                      ],
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                      onPressed: () {},
-                      child: const Text('Contactar'),
-                    )
+                    _buildFeatureIcon(context, Icons.bed, '$beds Hab'),
+                    _buildFeatureIcon(context, Icons.water_drop, water),
                   ],
                 ),
               ],
@@ -320,7 +320,19 @@ class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
           child: Icon(icon, size: 14, color: theme.colorScheme.primary),
         ),
         const SizedBox(width: 6),
-        Text(label, style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontSize: 13, fontWeight: FontWeight.w500)),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 120),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: theme.textTheme.bodyLarge?.color,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
       ],
     );
   }

@@ -1,110 +1,180 @@
-﻿import 'dart:ui';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:front_check/core/theme/app_colors.dart';
+import '../widgets/welcome_action_button.dart';
 
-class WelcomeScreen extends StatefulWidget {
+const _ivory = Color(0xFFF7F5F1);
+
+class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
   @override
-  State<WelcomeScreen> createState() => _WelcomeScreenState();
-}
-
-class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500));
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: const Interval(0.2, 1.0, curve: Curves.easeOut)));
-    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(CurvedAnimation(parent: _controller, curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic)));
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
     return Scaffold(
-      body: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [theme.colorScheme.surface, theme.colorScheme.background, theme.colorScheme.secondary.withOpacity(0.2)],
-              ),
-            ),
-          ),
-          Positioned(
-            top: -100, right: -100,
-            child: Container(
-              width: 300, height: 300,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.secondary.withOpacity(0.3)),
-              child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100), child: Container()),
-            ),
-          ),
-          Positioned(
-            bottom: -50, left: -100,
-            child: Container(
-              width: 300, height: 300,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.primary.withOpacity(0.3)),
-              child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100), child: Container()),
-            ),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: SlideTransition(
-                  position: _slideAnimation,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface.withOpacity(0.5),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: theme.colorScheme.onSurfaceVariant, width: 1),
-                          boxShadow: [BoxShadow(color: theme.colorScheme.primary.withOpacity(0.3), blurRadius: 30, spreadRadius: 5)],
+      backgroundColor: _ivory,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Keep a portrait composition on desktop; short screens can scroll.
+            final width = constraints.maxWidth > 600
+                ? math.min(
+                    480.0, math.max(320.0, constraints.maxHeight * 430 / 956))
+                : constraints.maxWidth;
+            final height = math.max(constraints.maxHeight, width * 956 / 430);
+            final scale = width / 430;
+            final textScale = MediaQuery.textScalerOf(context).scale(1);
+            final buttonHeight =
+                math.max(60.0, 74 * scale) * math.max(1.0, textScale);
+
+            return SingleChildScrollView(
+              child: Center(
+                child: SizedBox(
+                  width: width,
+                  height: height + math.max(0.0, textScale - 1) * 160,
+                  child: ClipRect(
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: ExcludeSemantics(
+                            child: CustomPaint(painter: _WelcomeBackground()),
+                          ),
                         ),
-                        child: Icon(Icons.real_estate_agent_rounded, size: 80, color: theme.textTheme.bodyLarge?.color),
-                      ),
-                      const SizedBox(height: 40),
-                      Text('Encuentra tu\nespacio ideal', style: theme.textTheme.displayMedium?.copyWith(fontSize: 48, height: 1.1), textAlign: TextAlign.center),
-                      const SizedBox(height: 16),
-                      Text('Conectamos personas con los mejores cuartos y departamentos de manera segura.', style: theme.textTheme.bodyLarge?.copyWith(fontSize: 18), textAlign: TextAlign.center),
-                      const Spacer(),
-                      ElevatedButton(onPressed: () => context.push('/register'), style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 20)), child: const Text('Comenzar ahora')),
-                      const SizedBox(height: 16),
-                      OutlinedButton(
-                        onPressed: () => context.push('/login'),
-                        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 20), side: BorderSide(color: theme.colorScheme.onSurfaceVariant, width: 1.5), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                        child: Text('Ya tengo una cuenta', style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontSize: 16, fontWeight: FontWeight.w600)),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
+                        Positioned(
+                          left: width * .022,
+                          top: height * .205,
+                          width: width * .978,
+                          height: height * .51,
+                          child: ClipPath(
+                            clipper: _VillaClipper(),
+                            child: Image.asset(
+                              'assets/images/welcome-villa.png',
+                              fit: BoxFit.cover,
+                              alignment: Alignment.topCenter,
+                              excludeFromSemantics: true,
+                              filterQuality: FilterQuality.high,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          left: width * .705,
+                          top: height * .187,
+                          width: width * .21,
+                          height: height * .112,
+                          child: const ExcludeSemantics(
+                            child: FittedBox(
+                              child: Icon(
+                                Icons.location_on_rounded,
+                                color: Color(0xFFE9EFF5),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          left: width * .075,
+                          right: width * .075,
+                          top: height * .742,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              WelcomeActionButton(
+                                label: 'comenzar ahora',
+                                primary: true,
+                                height: buttonHeight,
+                                scale: scale,
+                                onPressed: () => context.push('/register'),
+                              ),
+                              SizedBox(height: 20 * scale),
+                              WelcomeActionButton(
+                                label: 'ya tengo una cuenta',
+                                height: math.max(52.0, 58 * scale) *
+                                    math.max(1.0, textScale),
+                                scale: scale,
+                                onPressed: () => context.push('/login'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
-        ],
+            );
+          },
+        ),
       ),
     );
   }
+}
+
+class _VillaClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final w = size.width;
+    final h = size.height;
+    return Path()
+      ..moveTo(w, h * .10)
+      ..cubicTo(w * .70, -h * .07, w * .38, -h * .03, w * .16, h * .18)
+      ..cubicTo(-w * .05, h * .38, -w * .02, h * .61, w * .11, h * .77)
+      ..cubicTo(w * .28, h * .96, w * .63, h * .96, w, h)
+      ..close();
+  }
+
+  @override
+  bool shouldReclip(_VillaClipper oldClipper) => false;
+}
+
+class _WelcomeBackground extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.scale(size.width / 430, size.height / 956);
+
+    final upperShape = Path()
+      ..moveTo(430, 78)
+      ..cubicTo(322, 57, 203, 116, 205, 219)
+      ..cubicTo(216, 305, 348, 333, 430, 338)
+      ..close();
+    canvas.drawPath(
+      upperShape,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFDDE6ED), Color(0xFFCBDCE9)],
+        ).createShader(const Rect.fromLTWH(205, 75, 225, 270)),
+    );
+    canvas.drawOval(
+      const Rect.fromLTWH(270, 140, 147, 169),
+      Paint()..color = const Color(0xFFAFC6DA),
+    );
+    canvas.drawPath(
+      Path()
+        ..moveTo(8, 434)
+        ..cubicTo(4, 282, 91, 156, 245, 127),
+      Paint()
+        ..color = const Color(0xFFBDCFDF)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = .9,
+    );
+
+    final bottomWave = Path()
+      ..moveTo(0, 839)
+      ..cubicTo(26, 905, 85, 888, 157, 916)
+      ..cubicTo(196, 931, 226, 941, 250, 956)
+      ..lineTo(0, 956)
+      ..close();
+    canvas.drawPath(
+      bottomWave,
+      Paint()
+        ..shader = const LinearGradient(
+          colors: [Color(0xFFD6E3EC), Color(0xFFC4D6E6)],
+        ).createShader(const Rect.fromLTWH(0, 839, 250, 117)),
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_WelcomeBackground oldDelegate) => false;
 }

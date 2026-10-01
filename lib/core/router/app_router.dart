@@ -7,6 +7,7 @@ import '../../features/properties/presentation/pages/arrendador_dashboard_screen
 import '../../features/properties/presentation/pages/servicios_dashboard_screen.dart';
 import '../../features/properties/presentation/pages/publicar_propiedad_screen.dart';
 import '../../features/account/presentation/pages/account_screen.dart';
+import '../../features/profile/presentation/pages/perfil_screen.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -43,6 +44,10 @@ class AppRouter {
       GoRoute(
         path: '/account',
         builder: (context, state) => const AccountScreen(),
+      ),
+      GoRoute(
+        path: '/perfil',
+        builder: (context, state) => const PerfilScreen(),
       ),
     ],
   );

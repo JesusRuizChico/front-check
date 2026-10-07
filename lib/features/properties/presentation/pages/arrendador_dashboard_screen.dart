@@ -9,7 +9,8 @@ class ArrendadorDashboardScreen extends StatefulWidget {
   const ArrendadorDashboardScreen({super.key});
 
   @override
-  State<ArrendadorDashboardScreen> createState() => _ArrendadorDashboardScreenState();
+  State<ArrendadorDashboardScreen> createState() =>
+      _ArrendadorDashboardScreenState();
 }
 
 class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
@@ -33,7 +34,7 @@ class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Panel de Arrendador'),
@@ -48,17 +49,23 @@ class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
         children: [
           // Fondo oscuro/claro
           Container(color: theme.colorScheme.background),
-          
+
           // Desenfoque de acento superior
           Positioned(
-            top: -100, right: -50,
+            top: -100,
+            right: -50,
             child: Container(
-              width: 300, height: 300,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.primary.withOpacity(0.2)),
-              child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80), child: Container()),
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: theme.colorScheme.primary.withOpacity(0.2)),
+              child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+                  child: Container()),
             ),
           ),
-          
+
           SafeArea(
             child: SingleChildScrollView(
               child: Column(
@@ -68,7 +75,8 @@ class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
                   const SizedBox(height: 30),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: Text('Tus Propiedades', style: theme.textTheme.titleLarge),
+                    child: Text('Tus Propiedades',
+                        style: theme.textTheme.titleLarge),
                   ),
                   const SizedBox(height: 16),
                   FutureBuilder<List<dynamic>>(
@@ -82,7 +90,7 @@ class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
                           ),
                         );
                       }
-                      
+
                       if (snapshot.hasError) {
                         return Center(
                           child: Padding(
@@ -90,7 +98,8 @@ class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
                             child: Text(
                               'Error al cargar tus propiedades: ${snapshot.error}',
                               textAlign: TextAlign.center,
-                              style: theme.textTheme.bodyLarge?.copyWith(color: AppColors.danger),
+                              style: theme.textTheme.bodyLarge
+                                  ?.copyWith(color: AppColors.danger),
                             ),
                           ),
                         );
@@ -105,7 +114,8 @@ class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
                             child: Text(
                               'Aún no tienes propiedades publicadas. ¡Toca el botón "+" para comenzar!',
                               textAlign: TextAlign.center,
-                              style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant),
                             ),
                           ),
                         );
@@ -114,21 +124,28 @@ class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20.0),
                         child: Column(
-                          children: propiedades.map((p) => Padding(
-                            padding: const EdgeInsets.only(bottom: 20.0),
-                            child: _buildPremiumCard(
-                              context: context,
-                              title: p['titulo'] ?? 'Sin título',
-                              price: '\$${p['precio']}',
-                              location: p['ubicacion'] ?? 'Sin ubicación',
-                              isVerified: false,
-                              imageUrl: (p['imagenes'] != null && p['imagenes'].isNotEmpty) 
-                                  ? p['imagenes'][0] 
-                                  : '',
-                              beds: p['habitaciones']?.toString() ?? '1',
-                              water: p['servicios'] ?? 'No especificado',
-                            ),
-                          )).toList(),
+                          children: propiedades
+                              .map((p) => Padding(
+                                    padding:
+                                        const EdgeInsets.only(bottom: 20.0),
+                                    child: _buildPremiumCard(
+                                      context: context,
+                                      title: p['titulo'] ?? 'Sin título',
+                                      price: '\$${p['precio']}',
+                                      location:
+                                          p['ubicacion'] ?? 'Sin ubicación',
+                                      isVerified: false,
+                                      imageUrl: (p['imagenes'] != null &&
+                                              p['imagenes'].isNotEmpty)
+                                          ? p['imagenes'][0]
+                                          : '',
+                                      beds:
+                                          p['habitaciones']?.toString() ?? '1',
+                                      water:
+                                          p['servicios'] ?? 'No especificado',
+                                    ),
+                                  ))
+                              .toList(),
                         ),
                       );
                     },
@@ -165,13 +182,18 @@ class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: theme.colorScheme.onSurfaceVariant),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10)),
+          BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 10)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Encuentra tu', style: theme.textTheme.bodyLarge?.copyWith(color: theme.textTheme.bodyMedium?.color)),
+          Text('Encuentra tu',
+              style: theme.textTheme.bodyLarge
+                  ?.copyWith(color: theme.textTheme.bodyMedium?.color)),
           const SizedBox(height: 4),
           Text('Mis Propiedades', style: theme.textTheme.headlineMedium),
           const SizedBox(height: 20),
@@ -191,7 +213,8 @@ class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
                 focusedBorder: InputBorder.none,
                 fillColor: Colors.transparent,
                 filled: false,
-                prefixIcon: Icon(Icons.search, color: theme.colorScheme.primary),
+                prefixIcon:
+                    Icon(Icons.search, color: theme.colorScheme.primary),
               ),
             ),
           ),
@@ -217,7 +240,10 @@ class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: theme.colorScheme.onSurfaceVariant),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8)),
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 8)),
         ],
       ),
       child: Column(
@@ -226,36 +252,51 @@ class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
           Stack(
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(20)),
                 child: imageUrl.isEmpty
-                  ? Container(
-                      height: 200,
-                      color: theme.colorScheme.background,
-                      child: Center(child: Icon(Icons.image, size: 50, color: theme.colorScheme.onSurfaceVariant)),
-                    )
-                  : Image.network(
-                      imageUrl,
-                      height: 200,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
+                    ? Container(
                         height: 200,
                         color: theme.colorScheme.background,
-                        child: Center(child: Icon(Icons.broken_image, size: 50, color: theme.colorScheme.onSurfaceVariant)),
+                        child: Center(
+                            child: Icon(Icons.image,
+                                size: 50,
+                                color: theme.colorScheme.onSurfaceVariant)),
+                      )
+                    : Image.network(
+                        imageUrl,
+                        height: 200,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          height: 200,
+                          color: theme.colorScheme.background,
+                          child: Center(
+                              child: Icon(Icons.broken_image,
+                                  size: 50,
+                                  color: theme.colorScheme.onSurfaceVariant)),
+                        ),
                       ),
-                    ),
               ),
               if (isVerified)
                 Positioned(
-                  top: 16, left: 16,
+                  top: 16,
+                  left: 16,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(color: AppColors.success.withOpacity(0.9), borderRadius: BorderRadius.circular(12)),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                        color: AppColors.success.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(12)),
                     child: Row(
                       children: const [
                         Icon(Icons.verified, color: Colors.white, size: 14),
                         SizedBox(width: 4),
-                        Text('Verificada', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                        Text('Verificada',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ),
@@ -270,16 +311,31 @@ class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(child: Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textTheme.bodyLarge?.color), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                    Text(price, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
+                    Expanded(
+                        child: Text(title,
+                            style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: theme.textTheme.bodyLarge?.color),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis)),
+                    Text(price,
+                        style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary)),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.location_on, size: 14, color: theme.textTheme.bodyMedium?.color),
+                    Icon(Icons.location_on,
+                        size: 14, color: theme.textTheme.bodyMedium?.color),
                     const SizedBox(width: 4),
-                    Text(location, style: TextStyle(color: theme.textTheme.bodyMedium?.color, fontSize: 13)),
+                    Text(location,
+                        style: TextStyle(
+                            color: theme.textTheme.bodyMedium?.color,
+                            fontSize: 13)),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -294,7 +350,11 @@ class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
                       ],
                     ),
                     ElevatedButton(
-                      style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                      style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12))),
                       onPressed: () {},
                       child: const Text('Contactar'),
                     )
@@ -314,13 +374,18 @@ class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
       children: [
         Container(
           padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(color: theme.colorScheme.background, borderRadius: BorderRadius.circular(8)),
+          decoration: BoxDecoration(
+              color: theme.colorScheme.background,
+              borderRadius: BorderRadius.circular(8)),
           child: Icon(icon, size: 14, color: theme.colorScheme.primary),
         ),
         const SizedBox(width: 6),
-        Text(label, style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontSize: 13, fontWeight: FontWeight.w500)),
+        Text(label,
+            style: TextStyle(
+                color: theme.textTheme.bodyLarge?.color,
+                fontSize: 13,
+                fontWeight: FontWeight.w500)),
       ],
     );
   }
 }
-

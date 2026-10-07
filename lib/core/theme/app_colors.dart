@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class AppColors {
   // Tema Oscuro
@@ -7,7 +7,7 @@ class AppColors {
   static const Color textLight = Color(0xFFF8FAFC); // Slate 50
   static const Color textMutedDark = Color(0xFF94A3B8); // Slate 400
   static const Color surfaceDark = Color(0x1AFFFFFF); // 10% Blanco
-  static const Color glassBorderDark = Color(0x33FFFFFF); 
+  static const Color glassBorderDark = Color(0x33FFFFFF);
 
   // Tema Claro
   static const Color backgroundLight = Color(0xFFF1F5F9); // Slate 100
@@ -15,7 +15,7 @@ class AppColors {
   static const Color textDark = Color(0xFF0F172A); // Slate 900
   static const Color textMutedLight = Color(0xFF475569); // Slate 600
   static const Color surfaceLight = Color(0x1A000000); // 10% Negro
-  static const Color glassBorderLight = Color(0x33000000); 
+  static const Color glassBorderLight = Color(0x33000000);
 
   // Colores universales vibrantes
   static const Color accent = Color(0xFF3B82F6); // Blue 500

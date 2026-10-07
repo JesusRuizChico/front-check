@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
@@ -14,14 +14,21 @@ class AppTheme {
         surface: AppColors.backgroundDarker,
         background: AppColors.backgroundDark,
         error: AppColors.danger,
-        onSurfaceVariant: AppColors.glassBorderDark, // Usado para bordes de cristal
+        onSurfaceVariant:
+            AppColors.glassBorderDark, // Usado para bordes de cristal
       ),
-      textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme).copyWith(
-        displayLarge: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: AppColors.textLight),
-        displayMedium: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: AppColors.textLight),
-        headlineLarge: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: AppColors.textLight),
-        headlineMedium: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: AppColors.textLight),
-        titleLarge: GoogleFonts.outfit(fontWeight: FontWeight.w600, color: AppColors.textLight),
+      textTheme:
+          GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme).copyWith(
+        displayLarge: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold, color: AppColors.textLight),
+        displayMedium: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold, color: AppColors.textLight),
+        headlineLarge: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold, color: AppColors.textLight),
+        headlineMedium: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold, color: AppColors.textLight),
+        titleLarge: GoogleFonts.outfit(
+            fontWeight: FontWeight.w600, color: AppColors.textLight),
         bodyLarge: GoogleFonts.outfit(color: AppColors.textLight),
         bodyMedium: GoogleFonts.outfit(color: AppColors.textMutedDark),
       ),
@@ -30,11 +37,18 @@ class AppTheme {
         elevation: 0,
         centerTitle: true,
         iconTheme: IconThemeData(color: AppColors.textLight),
-        titleTextStyle: TextStyle(color: AppColors.textLight, fontSize: 20, fontWeight: FontWeight.w600),
+        titleTextStyle: TextStyle(
+            color: AppColors.textLight,
+            fontSize: 20,
+            fontWeight: FontWeight.w600),
       ),
       elevatedButtonTheme: _elevatedButtonTheme(AppColors.textLight),
       textButtonTheme: _textButtonTheme(),
-      inputDecorationTheme: _inputDecorationTheme(AppColors.surfaceDark, AppColors.glassBorderDark, AppColors.textMutedDark, AppColors.textLight),
+      inputDecorationTheme: _inputDecorationTheme(
+          AppColors.surfaceDark,
+          AppColors.glassBorderDark,
+          AppColors.textMutedDark,
+          AppColors.textLight),
     );
   }
 
@@ -49,14 +63,21 @@ class AppTheme {
         surface: AppColors.backgroundLighter,
         background: AppColors.backgroundLight,
         error: AppColors.danger,
-        onSurfaceVariant: AppColors.glassBorderLight, // Usado para bordes de cristal
+        onSurfaceVariant:
+            AppColors.glassBorderLight, // Usado para bordes de cristal
       ),
-      textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme).copyWith(
-        displayLarge: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: AppColors.textDark),
-        displayMedium: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: AppColors.textDark),
-        headlineLarge: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: AppColors.textDark),
-        headlineMedium: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: AppColors.textDark),
-        titleLarge: GoogleFonts.outfit(fontWeight: FontWeight.w600, color: AppColors.textDark),
+      textTheme:
+          GoogleFonts.outfitTextTheme(ThemeData.light().textTheme).copyWith(
+        displayLarge: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold, color: AppColors.textDark),
+        displayMedium: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold, color: AppColors.textDark),
+        headlineLarge: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold, color: AppColors.textDark),
+        headlineMedium: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold, color: AppColors.textDark),
+        titleLarge: GoogleFonts.outfit(
+            fontWeight: FontWeight.w600, color: AppColors.textDark),
         bodyLarge: GoogleFonts.outfit(color: AppColors.textDark),
         bodyMedium: GoogleFonts.outfit(color: AppColors.textMutedLight),
       ),
@@ -65,11 +86,18 @@ class AppTheme {
         elevation: 0,
         centerTitle: true,
         iconTheme: IconThemeData(color: AppColors.textDark),
-        titleTextStyle: TextStyle(color: AppColors.textDark, fontSize: 20, fontWeight: FontWeight.w600),
+        titleTextStyle: TextStyle(
+            color: AppColors.textDark,
+            fontSize: 20,
+            fontWeight: FontWeight.w600),
       ),
       elevatedButtonTheme: _elevatedButtonTheme(AppColors.textLight),
       textButtonTheme: _textButtonTheme(),
-      inputDecorationTheme: _inputDecorationTheme(AppColors.surfaceLight, AppColors.glassBorderLight, AppColors.textMutedLight, AppColors.textDark),
+      inputDecorationTheme: _inputDecorationTheme(
+          AppColors.surfaceLight,
+          AppColors.glassBorderLight,
+          AppColors.textMutedLight,
+          AppColors.textDark),
     );
   }
 
@@ -82,7 +110,8 @@ class AppTheme {
         shadowColor: AppColors.accent.withOpacity(0.5),
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        textStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.1),
+        textStyle: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.1),
       ),
     );
   }
@@ -96,16 +125,27 @@ class AppTheme {
     );
   }
 
-  static InputDecorationTheme _inputDecorationTheme(Color fill, Color border, Color hint, Color icon) {
+  static InputDecorationTheme _inputDecorationTheme(
+      Color fill, Color border, Color hint, Color icon) {
     return InputDecorationTheme(
       filled: true,
       fillColor: fill,
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: border, width: 1)),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: border, width: 1)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.accent, width: 2)),
-      errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.danger, width: 1)),
-      focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.danger, width: 2)),
+      border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: border, width: 1)),
+      enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: border, width: 1)),
+      focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.accent, width: 2)),
+      errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.danger, width: 1)),
+      focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.danger, width: 2)),
       hintStyle: TextStyle(color: hint),
       prefixIconColor: icon,
       suffixIconColor: icon,

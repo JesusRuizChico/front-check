@@ -1,0 +1,55 @@
+name: CI Frontend (front-check)
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+  workflow_dispatch: {}
+
+jobs:
+  build-and-test:
+    name: Análisis y pruebas (Flutter)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Instalar dependencias (flutter pub get)
+        run: flutter pub get
+
+      - name: Análisis estático (flutter analyze)
+        run: flutter analyze
+
+      - name: Formato de código (dart format --set-exit-if-changed)
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Ejecutar pruebas (flutter test)
+        run: flutter test --coverage
+
+      - name: Publicar reporte de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobertura-frontend
+          path: coverage/
+          retention-days: 7
+
+      - name: Build web (flutter build web)
+        if: github.event_name == 'push'
+        run: flutter build web --release
+
+      - name: Publicar el build web
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-web-build
+          path: build/web/
+          retention-days: 7

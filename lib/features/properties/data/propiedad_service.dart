@@ -25,13 +25,14 @@ class PropiedadService {
     };
 
     final files = <http.MultipartFile>[];
-    
+
     for (var i = 0; i < imagenes.length; i++) {
       final img = imagenes[i];
       final byteData = await img.readAsBytes();
-      final mimeType = lookupMimeType(img.name, headerBytes: byteData) ?? 'image/jpeg';
+      final mimeType =
+          lookupMimeType(img.name, headerBytes: byteData) ?? 'image/jpeg';
       final mediaType = MediaType.parse(mimeType);
-      
+
       files.add(
         http.MultipartFile.fromBytes(
           'imagenes',

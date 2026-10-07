@@ -36,7 +36,7 @@ class ApiClient {
     final headers = <String, String>{
       'Accept': 'application/json',
     };
-    
+
     if (_cookie != null) {
       headers['Cookie'] = _cookie!;
     }
@@ -64,7 +64,8 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> post(String path, Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> post(
+      String path, Map<String, dynamic> data) async {
     // Si no tenemos token CSRF, lo obtenemos primero
     if (_csrfToken == null) {
       await fetchCsrf();
@@ -74,11 +75,11 @@ class ApiClient {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
-    
+
     if (_cookie != null) {
       headers['Cookie'] = _cookie!;
     }
-    
+
     if (_csrfToken != null && _csrfHeaderName != null) {
       headers[_csrfHeaderName!] = _csrfToken!;
     }
@@ -112,26 +113,23 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> postMultipart(
-      String path, 
-      Map<String, String> fields, 
-      List<http.MultipartFile> files) async {
-    
+  Future<Map<String, dynamic>> postMultipart(String path,
+      Map<String, String> fields, List<http.MultipartFile> files) async {
     if (_csrfToken == null) {
       await fetchCsrf();
     }
 
     final url = Uri.parse('$_baseUrl$path');
     final request = http.MultipartRequest('POST', url);
-    
+
     final headers = <String, String>{
       'Accept': 'application/json',
     };
-    
+
     if (_cookie != null) {
       headers['Cookie'] = _cookie!;
     }
-    
+
     if (_csrfToken != null && _csrfHeaderName != null) {
       headers[_csrfHeaderName!] = _csrfToken!;
     }
@@ -142,7 +140,7 @@ class ApiClient {
 
     final streamedResponse = await _client.send(request);
     final response = await http.Response.fromStream(streamedResponse);
-    
+
     _updateCookie(response);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {

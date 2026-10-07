@@ -28,4 +28,3 @@ class ArrendamientoSeguroApp extends ConsumerWidget {
     );
   }
 }
-

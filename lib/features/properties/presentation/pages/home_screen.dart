@@ -1,8 +1,13 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
-import 'package:front_check/core/theme/app_colors.dart';
+import 'package:front_check/data/mock_database.dart';
+import 'package:front_check/domain/models/propiedad_model.dart';
+import 'package:front_check/features/properties/presentation/widgets/propiedad_card.dart';
+import 'package:front_check/features/properties/presentation/widgets/propiedad_detalle_sheet.dart';
+import 'package:front_check/features/properties/presentation/widgets/theme_selector_sheet.dart';
+import 'package:front_check/features/chat/presentation/pages/chat_list_screen.dart';
+import 'package:front_check/features/properties/presentation/pages/servicios_dashboard_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,320 +17,455 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  Future<void> _logout() async {
-    // TODO: Llamar al endpoint /api/auth/logout del backend
-    if (mounted) context.go('/');
+  int _currentIndex = 0;
+  final TextEditingController _searchController = TextEditingController();
+  String _filtroTexto = '';
+  String _categoriaSeleccionada = 'Todos';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _mostrarSelectorDeRoles() {
+    final theme = Theme.of(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Cambiar Rol de Usuario (Modo Demo)',
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Prueba la experiencia de cada tipo de usuario:',
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: theme.colorScheme.primary.withOpacity(0.2),
+                  child: Icon(Icons.person, color: theme.colorScheme.primary),
+                ),
+                title: const Text('Arrendatario (Ulises López)'),
+                subtitle: const Text('Explorar departamentos, rentar y chatear'),
+                trailing: mockDatabase.usuarioActual?.id == 2
+                    ? const Icon(Icons.check_circle, color: Colors.green)
+                    : null,
+                onTap: () {
+                  mockDatabase.setUsuarioActual(mockDatabase.usuarios[1]);
+                  Navigator.pop(ctx);
+                },
+              ),
+              ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Colors.purple.withOpacity(0.2),
+                  child: const Icon(Icons.real_estate_agent, color: Colors.purple),
+                ),
+                title: const Text('Arrendador (Jesús Ruiz Chico)'),
+                subtitle: const Text('Gestionar y publicar propiedades'),
+                trailing: mockDatabase.usuarioActual?.id == 1
+                    ? const Icon(Icons.check_circle, color: Colors.green)
+                    : null,
+                onTap: () {
+                  mockDatabase.setUsuarioActual(mockDatabase.usuarios[0]);
+                  Navigator.pop(ctx);
+                  context.go('/dashboard-arrendador');
+                },
+              ),
+              ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Colors.amber.withOpacity(0.2),
+                  child: const Icon(Icons.build_rounded, color: Colors.amber),
+                ),
+                title: const Text('Prestador de Servicios (Abigail Hernández)'),
+                subtitle: const Text('Atención de instalaciones y mantenimiento'),
+                trailing: mockDatabase.usuarioActual?.id == 3
+                    ? const Icon(Icons.check_circle, color: Colors.green)
+                    : null,
+                onTap: () {
+                  mockDatabase.setUsuarioActual(mockDatabase.usuarios[2]);
+                  Navigator.pop(ctx);
+                  context.go('/dashboard-servicios');
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final usuario = mockDatabase.usuarioActual;
+
+    return AnimatedBuilder(
+      animation: mockDatabase,
+      builder: (context, _) {
+        final totalChatsNoLeidos = mockDatabase.conversaciones
+            .fold<int>(0, (sum, c) => sum + c.mensajesNoLeidos);
+
+        return Scaffold(
+          body: IndexedStack(
+            index: _currentIndex,
+            children: [
+              _buildExplorarView(theme, usuario),
+              _buildFavoritosView(theme),
+              const ChatListScreen(),
+              const ServiciosDashboardScreen(esSubpantalla: true),
+            ],
+          ),
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: _currentIndex,
+            onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
+            destinations: [
+              const NavigationDestination(
+                icon: Icon(Icons.search_rounded),
+                selectedIcon: Icon(Icons.search_rounded),
+                label: 'Explorar',
+              ),
+              NavigationDestination(
+                icon: Badge(
+                  label: Text('${mockDatabase.favoritosIds.length}'),
+                  isLabelVisible: mockDatabase.favoritosIds.isNotEmpty,
+                  child: const Icon(Icons.favorite_outline_rounded),
+                ),
+                selectedIcon: const Icon(Icons.favorite_rounded),
+                label: 'Favoritos',
+              ),
+              NavigationDestination(
+                icon: Badge(
+                  label: Text('$totalChatsNoLeidos'),
+                  isLabelVisible: totalChatsNoLeidos > 0,
+                  child: const Icon(Icons.chat_bubble_outline_rounded),
+                ),
+                selectedIcon: const Icon(Icons.chat_bubble_rounded),
+                label: 'Chats',
+              ),
+              const NavigationDestination(
+                icon: Icon(Icons.handyman_outlined),
+                selectedIcon: Icon(Icons.handyman_rounded),
+                label: 'Servicios',
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildExplorarView(ThemeData theme, dynamic usuario) {
+    final propiedades = mockDatabase.getCatalogo(
+      query: _filtroTexto,
+      categoria: _categoriaSeleccionada,
+    );
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Inicio'),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.home_work_rounded, color: theme.colorScheme.primary, size: 24),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('HabitaCheck', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                Text(
+                  'Hola, ${(usuario?.nombre != null && usuario!.nombre.isNotEmpty) ? usuario.nombre.split(" ").first : "Bienvenido"}',
+                  style: theme.textTheme.bodySmall?.copyWith(fontSize: 12),
+                ),
+              ],
+            ),
+          ],
+        ),
         actions: [
+          // Botón selector de roles demo
+          TextButton.icon(
+            onPressed: _mostrarSelectorDeRoles,
+            icon: const Icon(Icons.switch_account_rounded, size: 18),
+            label: Text(
+              usuario?.rolPrincipal ?? 'Rol',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            ),
+          ),
+          // Botón para cambiar tema de color
           IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            onPressed: _logout,
+            tooltip: 'Cambiar Tema de Color',
+            icon: const Icon(Icons.palette_outlined),
+            onPressed: () => ThemeSelectorSheet.show(context),
+          ),
+          // Perfil
+          IconButton(
+            tooltip: 'Mi Perfil',
+            icon: const Icon(Icons.account_circle_outlined, size: 28),
+            onPressed: () => context.push('/perfil'),
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          // Fondo oscuro/claro
-          Container(color: theme.colorScheme.background),
-
-          // Desenfoque de acento superior
-          Positioned(
-            top: -100,
-            right: -50,
+      body: CustomScrollView(
+        slivers: [
+          // Banner de bienvenida con gradiente
+          SliverToBoxPadding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
             child: Container(
-              width: 300,
-              height: 300,
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: theme.colorScheme.primary.withOpacity(0.2)),
-              child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-                  child: Container()),
-            ),
-          ),
-
-          SafeArea(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildHeaderCard(context),
-                  const SizedBox(height: 30),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: Text('Propiedades Destacadas',
-                        style: theme.textTheme.titleLarge),
+                gradient: LinearGradient(
+                  colors: [
+                    theme.colorScheme.primary,
+                    theme.colorScheme.secondary,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.colorScheme.primary.withOpacity(0.35),
+                    blurRadius: 12,
+                    offset: const Offset(0, 5),
                   ),
-                  const SizedBox(height: 16),
-                  _buildCatalogGrid(context),
-                  const SizedBox(height: 40),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Encuentra tu próximo hogar seguro',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Contratos verificados y contacto directo.',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.85),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Icon(Icons.verified_user_rounded, color: Colors.white, size: 48),
                 ],
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildHeaderCard(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.colorScheme.onSurfaceVariant),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 10)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Encuentra tu',
-              style: theme.textTheme.bodyLarge
-                  ?.copyWith(color: theme.textTheme.bodyMedium?.color)),
-          const SizedBox(height: 4),
-          Text('Lugar Ideal', style: theme.textTheme.headlineMedium),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.background,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: theme.colorScheme.onSurfaceVariant),
-            ),
+          // Buscador interactivo
+          SliverToBoxPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TextField(
-              style: TextStyle(color: theme.textTheme.bodyLarge?.color),
+              controller: _searchController,
+              onChanged: (val) => setState(() => _filtroTexto = val),
               decoration: InputDecoration(
-                hintText: 'Buscar por zona (ej. Vista Hermosa)',
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                fillColor: Colors.transparent,
-                filled: false,
-                prefixIcon:
-                    Icon(Icons.search, color: theme.colorScheme.primary),
+                hintText: 'Buscar por colonia, ciudad o amenidad...',
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: _filtroTexto.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear_rounded),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _filtroTexto = '');
+                        },
+                      )
+                    : null,
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildCatalogGrid(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: Column(
-        children: [
-          _buildPremiumCard(
-            context: context,
-            title: 'Departamento Vista Hermosa',
-            price: '\$3,500',
-            location: 'Col. Vista Hermosa',
-            isVerified: true,
-            imageUrl:
-                'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=400',
-            beds: '2',
-            water: 'Alta',
-          ),
-          const SizedBox(height: 20),
-          _buildPremiumCard(
-            context: context,
-            title: 'Cuarto Estudiantil',
-            price: '\$1,800',
-            location: 'Cerca de UT',
-            isVerified: true,
-            imageUrl:
-                'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&q=80&w=400',
-            beds: '1',
-            water: 'Regular',
-          ),
-          const SizedBox(height: 20),
-          _buildPremiumCard(
-            context: context,
-            title: 'Edificio Centro',
-            price: '\$4,200',
-            location: 'Centro Histórico',
-            isVerified: false,
-            imageUrl:
-                'https://images.unsplash.com/photo-1460317442991-0ec209397118?auto=format&fit=crop&q=80&w=400',
-            beds: '3',
-            water: 'Alta',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPremiumCard({
-    required BuildContext context,
-    required String title,
-    required String price,
-    required String location,
-    required bool isVerified,
-    required String imageUrl,
-    required String beds,
-    required String water,
-  }) {
-    final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.onSurfaceVariant),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 15,
-              offset: const Offset(0, 8)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(20)),
-                child: Image.network(
-                  imageUrl,
-                  height: 200,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    height: 200,
-                    color: theme.colorScheme.background,
-                    child: Center(
-                        child: Icon(Icons.image,
-                            size: 50,
-                            color: theme.colorScheme.onSurfaceVariant)),
-                  ),
-                ),
+          // Categorías / Amenidades Chips
+          SliverToBoxPadding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  'Todos',
+                  'Wi-Fi',
+                  'Pet Friendly',
+                  'Alberca',
+                  'Seguridad 24/7',
+                  'Amueblado',
+                  'Gimnasio',
+                ].map((cat) {
+                  final isSelected = _categoriaSeleccionada == cat;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(cat),
+                      selected: isSelected,
+                      onSelected: (val) {
+                        if (val) setState(() => _categoriaSeleccionada = cat);
+                      },
+                      selectedColor: theme.colorScheme.primary.withOpacity(0.2),
+                      checkmarkColor: theme.colorScheme.primary,
+                      labelStyle: TextStyle(
+                        color: isSelected ? theme.colorScheme.primary : null,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
-              if (isVerified)
-                Positioned(
-                  top: 16,
-                  left: 16,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                        color: AppColors.success.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(12)),
-                    child: Row(
-                      children: const [
-                        Icon(Icons.verified, color: Colors.white, size: 14),
-                        SizedBox(width: 4),
-                        Text('Verificada',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ),
-                ),
-            ],
+            ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+
+          // Título de sección y contador
+          SliverToBoxPadding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                        child: Text(title,
-                            style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: theme.textTheme.bodyLarge?.color),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis)),
-                    Text(price,
-                        style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary)),
-                  ],
+                Text(
+                  'Propiedades Disponibles',
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.location_on,
-                        size: 14, color: theme.textTheme.bodyMedium?.color),
-                    const SizedBox(width: 4),
-                    Text(location,
-                        style: TextStyle(
-                            color: theme.textTheme.bodyMedium?.color,
-                            fontSize: 13)),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        _buildFeatureIcon(context, Icons.bed, '$beds Hab'),
-                        const SizedBox(width: 16),
-                        _buildFeatureIcon(context, Icons.water_drop, water),
-                      ],
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12))),
-                      onPressed: () {},
-                      child: const Text('Contactar'),
-                    )
-                  ],
+                Text(
+                  '${propiedades.length} resultados',
+                  style: theme.textTheme.bodySmall,
                 ),
               ],
             ),
           ),
+
+          // Lista de Tarjetas
+          if (propiedades.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.search_off_rounded, size: 64, color: Colors.grey.withOpacity(0.5)),
+                    const SizedBox(height: 12),
+                    const Text('No se encontraron propiedades con ese filtro'),
+                  ],
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final p = propiedades[index];
+                    return PropiedadCard(
+                      propiedad: p,
+                      onTap: () => PropiedadDetalleSheet.show(context, p),
+                    );
+                  },
+                  childCount: propiedades.length,
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildFeatureIcon(BuildContext context, IconData icon, String label) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-              color: theme.colorScheme.background,
-              borderRadius: BorderRadius.circular(8)),
-          child: Icon(icon, size: 14, color: theme.colorScheme.primary),
-        ),
-        const SizedBox(width: 6),
-        Text(label,
-            style: TextStyle(
-                color: theme.textTheme.bodyLarge?.color,
-                fontSize: 13,
-                fontWeight: FontWeight.w500)),
-      ],
+  Widget _buildFavoritosView(ThemeData theme) {
+    final favoritos = mockDatabase.getFavoritos();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Mis Favoritos'),
+        actions: [
+          IconButton(
+            tooltip: 'Cambiar Tema',
+            icon: const Icon(Icons.palette_outlined),
+            onPressed: () => ThemeSelectorSheet.show(context),
+          ),
+        ],
+      ),
+      body: favoritos.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.favorite_border_rounded, size: 72, color: Colors.redAccent.withOpacity(0.4)),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No tienes favoritos guardados',
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text('Presiona el corazón en las propiedades que te interesen.'),
+                ],
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: favoritos.length,
+              itemBuilder: (context, index) {
+                final p = favoritos[index];
+                return PropiedadCard(
+                  propiedad: p,
+                  onTap: () => PropiedadDetalleSheet.show(context, p),
+                );
+              },
+            ),
+    );
+  }
+}
+
+class SliverToBoxPadding extends StatelessWidget {
+  final EdgeInsetsGeometry padding;
+  final Widget child;
+
+  const SliverToBoxPadding({
+    super.key,
+    required this.padding,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverToBoxAdapter(
+      child: Padding(padding: padding, child: child),
     );
   }
 }

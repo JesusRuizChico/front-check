@@ -1,332 +1,363 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
-import 'package:front_check/core/theme/app_colors.dart';
+import 'package:front_check/data/mock_database.dart';
+import 'package:front_check/domain/models/servicio_model.dart';
+import 'package:front_check/features/properties/presentation/widgets/theme_selector_sheet.dart';
 
 class ServiciosDashboardScreen extends StatefulWidget {
-  const ServiciosDashboardScreen({super.key});
+  final bool esSubpantalla;
+
+  const ServiciosDashboardScreen({
+    super.key,
+    this.esSubpantalla = false,
+  });
 
   @override
-  State<ServiciosDashboardScreen> createState() =>
-      _ServiciosDashboardScreenState();
+  State<ServiciosDashboardScreen> createState() => _ServiciosDashboardScreenState();
 }
 
 class _ServiciosDashboardScreenState extends State<ServiciosDashboardScreen> {
-  Future<void> _logout() async {
-    // TODO: Llamar al endpoint /api/auth/logout del backend
-    if (mounted) context.go('/');
+  final TextEditingController _searchController = TextEditingController();
+  String _filtro = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _abrirChatConEspecialista(ServicioMantenimiento s) {
+    final miId = mockDatabase.usuarioActual?.id ?? 2;
+    final conv = mockDatabase.obtenerOIniciarConversacion(
+      miUsuarioId: miId,
+      otroUsuarioId: s.id + 10,
+      otroUsuarioNombre: s.nombre,
+      otroUsuarioFoto: s.fotoUrl,
+      otroUsuarioRol: s.especialidad,
+      propiedadTitulo: 'Servicio de ${s.especialidad}',
+    );
+    context.push('/chat-detail', extra: conv.id);
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final especialistas = mockDatabase.serviciosMantenimiento.where((s) {
+      if (_filtro.isNotEmpty) {
+        final q = _filtro.toLowerCase();
+        final matchNombre = s.nombre.toLowerCase().contains(q);
+        final matchEsp = s.especialidad.toLowerCase().contains(q);
+        final matchDesc = s.descripcion.toLowerCase().contains(q);
+        if (!matchNombre && !matchEsp && !matchDesc) return false;
+      }
+      return true;
+    }).toList();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Panel de Servicios'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            onPressed: _logout,
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          // Fondo oscuro/claro
-          Container(color: theme.colorScheme.background),
-
-          // Desenfoque de acento superior
-          Positioned(
-            top: -100,
-            right: -50,
+    final bodyContent = CustomScrollView(
+      slivers: [
+        // Banner informativo
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
             child: Container(
-              width: 300,
-              height: 300,
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: theme.colorScheme.primary.withOpacity(0.2)),
-              child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-                  child: Container()),
-            ),
-          ),
-
-          SafeArea(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildHeaderCard(context),
-                  const SizedBox(height: 30),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: Text('Propiedades Destacadas',
-                        style: theme.textTheme.titleLarge),
+                gradient: LinearGradient(
+                  colors: [
+                    theme.colorScheme.secondary,
+                    theme.colorScheme.primary,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.colorScheme.secondary.withOpacity(0.35),
+                    blurRadius: 12,
+                    offset: const Offset(0, 5),
                   ),
-                  const SizedBox(height: 16),
-                  _buildCatalogGrid(context),
-                  const SizedBox(height: 40),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'Mantenimiento y Reparaciones',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          'Técnicos certificados para tu departamento o casa en renta.',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Icon(Icons.handyman_rounded, color: Colors.white, size: 44),
                 ],
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeaderCard(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.colorScheme.onSurfaceVariant),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 10)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Encuentra tu',
-              style: theme.textTheme.bodyLarge
-                  ?.copyWith(color: theme.textTheme.bodyMedium?.color)),
-          const SizedBox(height: 4),
-          Text('Mis Servicios', style: theme.textTheme.headlineMedium),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.background,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: theme.colorScheme.onSurfaceVariant),
-            ),
-            child: TextField(
-              style: TextStyle(color: theme.textTheme.bodyLarge?.color),
-              decoration: InputDecoration(
-                hintText: 'Buscar mis servicios...',
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                fillColor: Colors.transparent,
-                filled: false,
-                prefixIcon:
-                    Icon(Icons.search, color: theme.colorScheme.primary),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCatalogGrid(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: Column(
-        children: [
-          _buildPremiumCard(
-            context: context,
-            title: 'Departamento Vista Hermosa',
-            price: '\$3,500',
-            location: 'Col. Vista Hermosa',
-            isVerified: true,
-            imageUrl:
-                'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=400',
-            beds: '2',
-            water: 'Alta',
-          ),
-          const SizedBox(height: 20),
-          _buildPremiumCard(
-            context: context,
-            title: 'Cuarto Estudiantil',
-            price: '\$1,800',
-            location: 'Cerca de UT',
-            isVerified: true,
-            imageUrl:
-                'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&q=80&w=400',
-            beds: '1',
-            water: 'Regular',
-          ),
-          const SizedBox(height: 20),
-          _buildPremiumCard(
-            context: context,
-            title: 'Edificio Centro',
-            price: '\$4,200',
-            location: 'Centro Histórico',
-            isVerified: false,
-            imageUrl:
-                'https://images.unsplash.com/photo-1460317442991-0ec209397118?auto=format&fit=crop&q=80&w=400',
-            beds: '3',
-            water: 'Alta',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPremiumCard({
-    required BuildContext context,
-    required String title,
-    required String price,
-    required String location,
-    required bool isVerified,
-    required String imageUrl,
-    required String beds,
-    required String water,
-  }) {
-    final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.onSurfaceVariant),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 15,
-              offset: const Offset(0, 8)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(20)),
-                child: Image.network(
-                  imageUrl,
-                  height: 200,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    height: 200,
-                    color: theme.colorScheme.background,
-                    child: Center(
-                        child: Icon(Icons.image,
-                            size: 50,
-                            color: theme.colorScheme.onSurfaceVariant)),
-                  ),
-                ),
-              ),
-              if (isVerified)
-                Positioned(
-                  top: 16,
-                  left: 16,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                        color: AppColors.success.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(12)),
-                    child: Row(
-                      children: const [
-                        Icon(Icons.verified, color: Colors.white, size: 14),
-                        SizedBox(width: 4),
-                        Text('Verificada',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                        child: Text(title,
-                            style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: theme.textTheme.bodyLarge?.color),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis)),
-                    Text(price,
-                        style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.location_on,
-                        size: 14, color: theme.textTheme.bodyMedium?.color),
-                    const SizedBox(width: 4),
-                    Text(location,
-                        style: TextStyle(
-                            color: theme.textTheme.bodyMedium?.color,
-                            fontSize: 13)),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        _buildFeatureIcon(context, Icons.bed, '$beds Hab'),
-                        const SizedBox(width: 16),
-                        _buildFeatureIcon(context, Icons.water_drop, water),
-                      ],
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12))),
-                      onPressed: () {},
-                      child: const Text('Contactar'),
-                    )
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFeatureIcon(BuildContext context, IconData icon, String label) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-              color: theme.colorScheme.background,
-              borderRadius: BorderRadius.circular(8)),
-          child: Icon(icon, size: 14, color: theme.colorScheme.primary),
         ),
-        const SizedBox(width: 6),
-        Text(label,
-            style: TextStyle(
-                color: theme.textTheme.bodyLarge?.color,
-                fontSize: 13,
-                fontWeight: FontWeight.w500)),
+
+        // Buscador
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) => setState(() => _filtro = val),
+              decoration: InputDecoration(
+                hintText: 'Buscar por plomero, electricista, cerrajero...',
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: _filtro.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear_rounded),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _filtro = '');
+                        },
+                      )
+                    : null,
+              ),
+            ),
+          ),
+        ),
+
+        // Título de sección
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              'Especialistas Certificados',
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+
+        // Lista de Técnicos
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final esp = especialistas[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 14),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 30,
+                              backgroundImage: NetworkImage(esp.fotoUrl),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        esp.nombre,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: esp.disponible
+                                              ? Colors.green.withOpacity(0.15)
+                                              : Colors.grey.withOpacity(0.2),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.circle,
+                                              size: 8,
+                                              color: esp.disponible ? Colors.green : Colors.grey,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              esp.disponible ? 'Disponible' : 'Ocupado',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                                color: esp.disponible ? Colors.green : Colors.grey,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    esp.especialidad,
+                                    style: TextStyle(
+                                      color: theme.colorScheme.primary,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.star_rounded, color: Colors.amber, size: 18),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        '${esp.calificacion}',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        '(${esp.trabajosRealizados} servicios)',
+                                        style: theme.textTheme.bodySmall,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          esp.descripcion,
+                          style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Chips de servicios ofrecidos
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: esp.serviciosOfrecidos.map((so) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: theme.scaffoldBackgroundColor,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                              ),
+                              child: Text(so, style: const TextStyle(fontSize: 11)),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Tarifa y botones de contacto
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Tarifa diagnóstico:', style: theme.textTheme.bodySmall),
+                                Text(
+                                  '\$${esp.tarifaBase.toInt()} MXN',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.primary,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                IconButton.outlined(
+                                  icon: const Icon(Icons.phone_rounded, color: Colors.green),
+                                  onPressed: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Llamando a ${esp.nombre} (${esp.telefono})...'),
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                ElevatedButton.icon(
+                                  onPressed: () => _abrirChatConEspecialista(esp),
+                                  icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                                  label: const Text('Contactar'),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+              childCount: especialistas.length,
+            ),
+          ),
+        ),
       ],
+    );
+
+    if (widget.esSubpantalla) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Directorio de Servicios'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.palette_outlined),
+              tooltip: 'Cambiar Tema',
+              onPressed: () => ThemeSelectorSheet.show(context),
+            ),
+          ],
+        ),
+        body: bodyContent,
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Directorio de Servicios'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.palette_outlined),
+            tooltip: 'Cambiar Tema',
+            onPressed: () => ThemeSelectorSheet.show(context),
+          ),
+          IconButton(
+            icon: const Icon(Icons.account_circle_outlined, size: 28),
+            onPressed: () => context.push('/perfil'),
+          ),
+        ],
+      ),
+      body: bodyContent,
     );
   }
 }

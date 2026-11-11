@@ -236,3 +236,4 @@ jobs:
           echo "**Versión:** \`v${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**APK:** \`habitacheck-v${{ steps.version.outputs.version }}.apk\`" >> $GITHUB_STEP_SUMMARY
           echo "**AAB:** \`habitacheck-v${{ steps.version.outputs.version }}.aab\`" >> $GITHUB_STEP_SUMMARY
+

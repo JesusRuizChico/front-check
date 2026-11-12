@@ -25,7 +25,7 @@ void main() {
       expect(resultado, isTrue);
     });
 
-    test('CP03: Rol servicios válido retorna true', () {
+    test('CP03: Rol de prestador de servicios ya no es válido', () {
       // ARRANGE
       const inputRole = 'servicios';
 
@@ -33,7 +33,7 @@ void main() {
       final resultado = RoleValidator.isValid(inputRole);
 
       // ASSERT
-      expect(resultado, isTrue);
+      expect(resultado, isFalse);
     });
 
     test('CP04: Rol no reconocido debe retornar false', () {

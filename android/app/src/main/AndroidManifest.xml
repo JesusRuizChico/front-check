@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Necesario para comunicarse con el backend en compilaciones de producción. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="front_check"
+        android:label="HabitaCheck"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">

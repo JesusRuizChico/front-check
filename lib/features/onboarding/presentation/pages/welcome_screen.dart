@@ -1,7 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../data/mock_database.dart';
+import '../../../../core/router/rutas.dart';
+import '../../../../core/widgets/app_logo.dart';
 import '../../../properties/presentation/widgets/theme_selector_sheet.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -64,8 +65,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 end: Alignment.bottomRight,
                 colors: [
                   theme.scaffoldBackgroundColor,
-                  theme.colorScheme.primary.withOpacity(0.12),
-                  theme.colorScheme.secondary.withOpacity(0.18),
+                  theme.colorScheme.primary.withValues(alpha: 0.12),
+                  theme.colorScheme.secondary.withValues(alpha: 0.18),
                 ],
               ),
             ),
@@ -78,7 +79,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               height: 320,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: theme.colorScheme.secondary.withOpacity(0.25),
+                color: theme.colorScheme.secondary.withValues(alpha: 0.25),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
@@ -94,7 +95,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: theme.colorScheme.primary.withOpacity(0.25),
+                color: theme.colorScheme.primary.withValues(alpha: 0.25),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
@@ -114,31 +115,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const Spacer(),
-                      Center(
-                        child: Container(
-                          padding: const EdgeInsets.all(22),
-                          decoration: BoxDecoration(
-                            color: theme.cardColor.withOpacity(0.7),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: theme.colorScheme.primary.withOpacity(0.3),
-                              width: 1.5,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: theme.colorScheme.primary.withOpacity(0.3),
-                                blurRadius: 32,
-                                spreadRadius: 4,
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.home_work_rounded,
-                            size: 72,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      ),
+                      const Center(child: AppLogo(size: 116)),
                       const SizedBox(height: 32),
                       Text(
                         'HabitaCheck',
@@ -160,30 +137,14 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Encuentra y publica departamentos, conéctate por chat directamente y solicita mantenimiento especializado.',
+                        'Encuentra y publica departamentos en renta y conéctate por chat directamente con arrendadores e inquilinos.',
                         style: theme.textTheme.bodyMedium?.copyWith(fontSize: 15, height: 1.4),
                         textAlign: TextAlign.center,
                       ),
                       const Spacer(),
 
-                      // Botón Explorar Inmediato (Modo Demo)
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          mockDatabase.setUsuarioActual(mockDatabase.usuarios[1]);
-                          context.go('/home');
-                        },
-                        icon: const Icon(Icons.explore_rounded),
-                        label: const Text('Explorar Catálogo (Modo Demo)'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          side: BorderSide(color: theme.colorScheme.primary, width: 1.5),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-
                       ElevatedButton(
-                        onPressed: () => context.push('/login'),
+                        onPressed: () => context.push(Rutas.login),
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 18),
                         ),
@@ -192,7 +153,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       const SizedBox(height: 12),
 
                       TextButton(
-                        onPressed: () => context.push('/register'),
+                        onPressed: () => context.push(Rutas.registro),
                         child: const Text('Crear una cuenta nueva'),
                       ),
                       const SizedBox(height: 10),

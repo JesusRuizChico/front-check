@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'core/theme/theme_provider.dart';
+
 import 'core/router/app_router.dart';
+import 'core/theme/theme_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-
   runApp(
-    const ProviderScope(
-      child: ArrendamientoSeguroApp(),
-    ),
+    // Los errores se muestran al usuario con opción de reintentar; no hay reintentos automáticos.
+    ProviderScope(retry: (_, _) => null, child: const ArrendamientoSeguroApp()),
   );
 }
 
@@ -20,17 +19,12 @@ class ArrendamientoSeguroApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeState = ref.watch(themeProvider);
 
-    final activeTheme = DynamicAppTheme.buildTheme(
-      isDark: themeState.isDark,
-      palette: themeState.palette,
-    );
-
     return MaterialApp.router(
       title: 'HabitaCheck',
       debugShowCheckedModeBanner: false,
-      theme: activeTheme,
+      theme: DynamicAppTheme.buildTheme(isDark: themeState.isDark, palette: themeState.palette),
       themeMode: themeState.mode,
-      routerConfig: AppRouter.router,
+      routerConfig: ref.watch(routerProvider),
     );
   }
 }

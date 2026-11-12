@@ -104,7 +104,7 @@ class DynamicAppTheme {
     final cardBg = isDark ? const Color(0xFF1E293B) : const Color(0xFFFFFFFF);
     final text = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
     final textMuted = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-    final border = isDark ? Colors.white.withOpacity(0.12) : Colors.black.withOpacity(0.08);
+    final border = isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08);
 
     final colorScheme = isDark
         ? ColorScheme.dark(
@@ -157,7 +157,7 @@ class DynamicAppTheme {
           backgroundColor: palette.primary,
           foregroundColor: Colors.white,
           elevation: 6,
-          shadowColor: palette.primary.withOpacity(0.4),
+          shadowColor: palette.primary.withValues(alpha: 0.4),
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           textStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
@@ -184,7 +184,7 @@ class DynamicAppTheme {
       ),
       chipTheme: ChipThemeData(
         backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-        selectedColor: palette.primary.withOpacity(0.2),
+        selectedColor: palette.primary.withValues(alpha: 0.2),
         secondarySelectedColor: palette.primary,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

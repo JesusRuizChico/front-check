@@ -1,11 +1,11 @@
 {
-    "name": "front_check",
-    "short_name": "front_check",
+    "name": "HabitaCheck",
+    "short_name": "HabitaCheck",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Arrendamiento seguro: publica y encuentra propiedades en renta.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

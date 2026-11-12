@@ -1,21 +1,16 @@
+import '../models/registro_usuario.dart';
 import '../models/usuario_model.dart';
 
-abstract class IAuthRepository {
-  Usuario? get usuarioActual;
-  Stream<Usuario?> get authStateChanges;
-
+abstract interface class IAuthRepository {
   Future<Usuario> login(String correo, String contrasena);
 
-  Future<Usuario> register({
-    required String nombre,
-    required String correo,
-    required String contrasena,
-    required String telefono,
-    required String rolSolicitado,
-  });
+  Future<void> registrar(RegistroUsuario registro);
 
   Future<void> logout();
 
-  void cambiarUsuarioDemo(Usuario usuario);
-}
+  /// Devuelve el usuario si la sesión del dispositivo sigue activa.
+  Future<Usuario?> sesionActual();
 
+  /// Notifica cuando el servidor rechaza la sesión.
+  Stream<void> get sesionExpirada;
+}

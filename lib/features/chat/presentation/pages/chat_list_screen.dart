@@ -8,6 +8,7 @@ import '../../../../core/widgets/avatar_usuario.dart';
 import '../../../../core/widgets/estado_vacio.dart';
 import '../../../../domain/models/chat_model.dart';
 import '../../../auth/application/sesion_controller.dart';
+import '../../../auth/presentation/widgets/boton_cerrar_sesion.dart';
 import '../../../properties/presentation/widgets/theme_selector_sheet.dart';
 import '../../application/chat_controller.dart';
 import '../../application/conversaciones_controller.dart';
@@ -80,6 +81,7 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
             tooltip: 'Mi Perfil',
             onPressed: () => context.push(Rutas.perfil),
           ),
+          const BotonCerrarSesion(),
         ],
       ),
       body: Column(

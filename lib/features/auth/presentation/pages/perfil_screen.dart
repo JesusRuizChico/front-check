@@ -10,6 +10,7 @@ import '../../../../domain/models/usuario_model.dart';
 import '../../../properties/presentation/widgets/theme_selector_sheet.dart';
 import '../../application/perfil_controller.dart';
 import '../../application/sesion_controller.dart';
+import '../widgets/boton_cerrar_sesion.dart';
 
 class PerfilScreen extends ConsumerStatefulWidget {
   const PerfilScreen({super.key});
@@ -165,25 +166,6 @@ class _PerfilScreenState extends ConsumerState<PerfilScreen> {
     );
   }
 
-  Future<void> _logout() async {
-    final confirmar = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Cerrar Sesión'),
-        content: const Text('¿Estás seguro de que deseas salir de tu cuenta?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Cerrar Sesión', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-    // Al cerrar sesión el router regresa a la pantalla de bienvenida.
-    if (confirmar == true) await ref.read(sesionProvider.notifier).cerrarSesion();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -202,11 +184,7 @@ class _PerfilScreenState extends ConsumerState<PerfilScreen> {
             icon: const Icon(Icons.palette_outlined),
             onPressed: () => ThemeSelectorSheet.show(context),
           ),
-          IconButton(
-            tooltip: 'Cerrar Sesión',
-            icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
-            onPressed: _logout,
-          ),
+          const BotonCerrarSesion(),
         ],
       ),
       body: SingleChildScrollView(

@@ -6,6 +6,7 @@ import '../../../../core/router/rutas.dart';
 import '../../../../core/widgets/avisos.dart';
 import '../../../../core/widgets/estado_vacio.dart';
 import '../../../../domain/models/propiedad_model.dart';
+import '../../../auth/presentation/widgets/boton_cerrar_sesion.dart';
 import '../../../chat/application/conversaciones_controller.dart';
 import '../../application/mis_propiedades_controller.dart';
 import '../widgets/propiedad_card.dart';
@@ -116,6 +117,7 @@ class _ArrendadorDashboardScreenState extends ConsumerState<ArrendadorDashboardS
             icon: const Icon(Icons.account_circle_outlined, size: 28),
             onPressed: () => context.push(Rutas.perfil),
           ),
+          const BotonCerrarSesion(),
         ],
       ),
       body: RefreshIndicator(

@@ -8,6 +8,7 @@ import '../../../../core/widgets/avisos.dart';
 import '../../../../core/widgets/estado_vacio.dart';
 import '../../../../domain/models/propiedad_model.dart';
 import '../../../auth/application/sesion_controller.dart';
+import '../../../auth/presentation/widgets/boton_cerrar_sesion.dart';
 import '../../../chat/application/abrir_chat_propiedad.dart';
 import '../../../chat/application/conversaciones_controller.dart';
 import '../../../chat/presentation/pages/chat_detail_screen.dart';
@@ -171,6 +172,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: const Icon(Icons.account_circle_outlined, size: 28),
             onPressed: () => context.push(Rutas.perfil),
           ),
+          const BotonCerrarSesion(),
         ],
       ),
       body: RefreshIndicator(
@@ -352,6 +354,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: const Icon(Icons.palette_outlined),
             onPressed: () => ThemeSelectorSheet.show(context),
           ),
+          const BotonCerrarSesion(),
         ],
       ),
       body: RefreshIndicator(

@@ -16,6 +16,7 @@ import '../../../chat/presentation/pages/chat_list_screen.dart';
 import '../../application/catalogo_controller.dart';
 import '../../application/favoritos_controller.dart';
 import '../../application/filtro_propiedades.dart';
+import '../widgets/filtros_propiedades_sheet.dart';
 import '../widgets/propiedad_card.dart';
 import '../widgets/propiedad_detalle_sheet.dart';
 import '../widgets/theme_selector_sheet.dart';
@@ -41,8 +42,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   int _currentIndex = 0;
   final TextEditingController _searchController = TextEditingController();
-  String _filtroTexto = '';
-  String _categoriaSeleccionada = FiltroPropiedades.todas;
+  FiltroPropiedades _filtros = const FiltroPropiedades();
 
   @override
   void dispose() {
@@ -79,6 +79,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _verDetalle(Propiedad propiedad) {
     PropiedadDetalleSheet.show(context, propiedad, onContactar: () => _contactar(propiedad));
+  }
+
+  Future<void> _abrirFiltros() async {
+    final resultado =
+        await FiltrosPropiedadesSheet.show(context, inicial: _filtros);
+    if (!mounted || resultado == null) return;
+    setState(() => _filtros = resultado);
+  }
+
+  void _actualizarFiltro({String? texto, String? amenidad}) {
+    _filtros = FiltroPropiedades(
+      texto: texto ?? _filtros.texto,
+      amenidad: amenidad ?? _filtros.amenidad,
+      precioMinimo: _filtros.precioMinimo,
+      precioMaximo: _filtros.precioMaximo,
+      habitacionesMinimas: _filtros.habitacionesMinimas,
+      banosMinimos: _filtros.banosMinimos,
+      estacionamientosMinimos: _filtros.estacionamientosMinimos,
+      soloVerificadas: _filtros.soloVerificadas,
+    );
   }
 
   Widget _tarjeta(Propiedad propiedad) {
@@ -140,7 +160,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildExplorarView(ThemeData theme) {
     final usuario = ref.watch(sesionProvider).usuario;
     final catalogo = ref.watch(catalogoProvider);
-    final filtro = FiltroPropiedades(texto: _filtroTexto, amenidad: _categoriaSeleccionada);
 
     return Scaffold(
       appBar: AppBar(
@@ -227,19 +246,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: TextField(
                 controller: _searchController,
-                onChanged: (val) => setState(() => _filtroTexto = val),
+                onChanged: (val) =>
+                    setState(() => _actualizarFiltro(texto: val)),
                 decoration: InputDecoration(
                   hintText: 'Buscar por colonia, ciudad o amenidad...',
                   prefixIcon: const Icon(Icons.search_rounded),
-                  suffixIcon: _filtroTexto.isNotEmpty
+                  suffixIcon: _filtros.texto.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear_rounded),
                           onPressed: () {
                             _searchController.clear();
-                            setState(() => _filtroTexto = '');
+                            setState(() => _actualizarFiltro(texto: ''));
                           },
                         )
                       : null,
+                ),
+              ),
+            ),
+            SliverToBoxPadding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: OutlinedButton.icon(
+                  onPressed: _abrirFiltros,
+                  icon: const Icon(Icons.tune_rounded),
+                  label: Text(
+                    _filtros.cantidadCriteriosActivos == 0
+                        ? 'Filtros'
+                        : 'Filtros (${_filtros.cantidadCriteriosActivos})',
+                  ),
                 ),
               ),
             ),
@@ -249,14 +284,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: _categorias.map((cat) {
-                    final isSelected = _categoriaSeleccionada == cat;
+                    final isSelected = _filtros.amenidad == cat;
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: FilterChip(
                         label: Text(cat),
                         selected: isSelected,
                         onSelected: (val) {
-                          if (val) setState(() => _categoriaSeleccionada = cat);
+                          if (val)
+                            setState(() => _actualizarFiltro(amenidad: cat));
                         },
                         selectedColor: theme.colorScheme.primary.withValues(alpha: 0.2),
                         checkmarkColor: theme.colorScheme.primary,
@@ -291,7 +327,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
               ],
-              data: (todas) => _seccionCatalogo(theme, todas, filtro),
+              data: (todas) => _seccionCatalogo(theme, todas, _filtros),
             ),
           ],
         ),

@@ -1,26 +1,32 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:front_check/data/mock_database.dart';
-import 'package:front_check/domain/models/propiedad_model.dart';
-import 'package:front_check/features/properties/presentation/widgets/theme_selector_sheet.dart';
 
-class PublicarPropiedadScreen extends StatefulWidget {
+import '../../../../core/utils/price_validator.dart';
+import '../../../../core/widgets/avisos.dart';
+import '../../../../di/dependencias.dart';
+import '../../../../domain/models/archivo_imagen.dart';
+import '../../../../domain/models/nueva_propiedad.dart';
+import '../../application/catalogo_controller.dart';
+import '../../application/mis_propiedades_controller.dart';
+import '../widgets/theme_selector_sheet.dart';
+
+class PublicarPropiedadScreen extends ConsumerStatefulWidget {
   const PublicarPropiedadScreen({super.key});
 
   @override
-  State<PublicarPropiedadScreen> createState() => _PublicarPropiedadScreenState();
+  ConsumerState<PublicarPropiedadScreen> createState() => _PublicarPropiedadScreenState();
 }
 
-class _PublicarPropiedadScreenState extends State<PublicarPropiedadScreen> {
+class _PublicarPropiedadScreenState extends ConsumerState<PublicarPropiedadScreen> {
+  static const _maximoImagenes = 5;
+
   final _formKey = GlobalKey<FormState>();
 
   final _tituloController = TextEditingController();
   final _descripcionController = TextEditingController();
   final _precioController = TextEditingController();
-
   final _calleController = TextEditingController();
   final _numeroExteriorController = TextEditingController();
   final _numeroInteriorController = TextEditingController();
@@ -31,146 +37,106 @@ class _PublicarPropiedadScreenState extends State<PublicarPropiedadScreen> {
   final _habitacionesController = TextEditingController(text: '2');
   final _banosController = TextEditingController(text: '1');
   final _estacionamientosController = TextEditingController(text: '1');
-  final _metrosCuadradosController = TextEditingController(text: '85');
+  final _metrosCuadradosController = TextEditingController();
 
-  final ImagePicker _picker = ImagePicker();
-  final List<XFile> _imagenesLocales = [];
-  final List<String> _imagenesUrls = [
-    'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1000&q=80',
-  ];
+  final List<ArchivoImagen> _imagenes = [];
+  final Set<int> _amenidadesSeleccionadas = {};
   bool _isLoading = false;
-
-  final Set<String> _serviciosSeleccionados = {
-    'Agua potable',
-    'Electricidad',
-    'Internet / Wi-Fi',
-  };
-
-  final List<String> _fotosMuestra = [
-    'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80',
-  ];
 
   @override
   void dispose() {
-    _tituloController.dispose();
-    _descripcionController.dispose();
-    _precioController.dispose();
-    _calleController.dispose();
-    _numeroExteriorController.dispose();
-    _numeroInteriorController.dispose();
-    _coloniaController.dispose();
-    _municipioController.dispose();
-    _estadoController.dispose();
-    _codigoPostalController.dispose();
-    _habitacionesController.dispose();
-    _banosController.dispose();
-    _estacionamientosController.dispose();
-    _metrosCuadradosController.dispose();
+    for (final controller in [
+      _tituloController,
+      _descripcionController,
+      _precioController,
+      _calleController,
+      _numeroExteriorController,
+      _numeroInteriorController,
+      _coloniaController,
+      _municipioController,
+      _estadoController,
+      _codigoPostalController,
+      _habitacionesController,
+      _banosController,
+      _estacionamientosController,
+      _metrosCuadradosController,
+    ]) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
   Future<void> _pickImages() async {
-    try {
-      final List<XFile> pickedFiles = await _picker.pickMultiImage();
-      if (pickedFiles.isNotEmpty) {
-        setState(() {
-          _imagenesLocales.addAll(pickedFiles);
-        });
-      }
-    } catch (_) {
-      // Si el picker no responde en emulador, agregar fotos de muestra de arquitectura
-      _agregarFotoMuestra();
+    final disponibles = _maximoImagenes - _imagenes.length;
+    if (disponibles <= 0) {
+      Avisos.info(context, 'Puedes subir hasta $_maximoImagenes fotografías.');
+      return;
     }
-  }
-
-  void _agregarFotoMuestra() {
-    setState(() {
-      final nextImg = _fotosMuestra[(_imagenesUrls.length) % _fotosMuestra.length];
-      if (!_imagenesUrls.contains(nextImg)) {
-        _imagenesUrls.add(nextImg);
+    try {
+      final elegidas = await ref.read(selectorImagenesProvider).elegirVarias(maximo: disponibles);
+      if (elegidas.isNotEmpty && mounted) {
+        setState(() => _imagenes.addAll(elegidas.take(disponibles)));
       }
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Foto de muestra HD agregada.'),
-        duration: Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    } catch (error) {
+      if (mounted) Avisos.error(context, error);
+    }
   }
 
   Future<void> _guardarPropiedad() async {
     if (!_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor completa los campos requeridos.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      Avisos.info(context, 'Por favor completa los campos requeridos.');
+      return;
+    }
+    if (_imagenes.isEmpty) {
+      Avisos.info(context, 'Agrega al menos una fotografía del inmueble.');
       return;
     }
 
     setState(() => _isLoading = true);
-
-    await Future.delayed(const Duration(milliseconds: 400));
-
-    final usuario = mockDatabase.usuarioActual ?? mockDatabase.usuarios[0];
-
-    final nueva = Propiedad(
-      id: 0,
+    final interior = _numeroInteriorController.text.trim();
+    final metros = _metrosCuadradosController.text.trim();
+    final nueva = NuevaPropiedad(
       titulo: _tituloController.text.trim(),
       descripcion: _descripcionController.text.trim(),
-      precioMensual: double.tryParse(_precioController.text.trim()) ?? 12000.0,
+      precioMensual: double.parse(_precioController.text.trim()),
       calle: _calleController.text.trim(),
       numeroExterior: _numeroExteriorController.text.trim(),
-      numeroInterior: _numeroInteriorController.text.trim().isNotEmpty
-          ? _numeroInteriorController.text.trim()
-          : null,
+      numeroInterior: interior.isEmpty ? null : interior,
       colonia: _coloniaController.text.trim(),
       municipio: _municipioController.text.trim(),
       estadoUbicacion: _estadoController.text.trim(),
       codigoPostal: _codigoPostalController.text.trim(),
-      imagenes: List.from(_imagenesUrls),
-      servicios: _serviciosSeleccionados.toList(),
-      estado: 'activa',
-      arrendadorId: usuario.id,
-      arrendadorNombre: usuario.nombre,
-      arrendadorTelefono: usuario.telefono,
-      habitaciones: int.tryParse(_habitacionesController.text) ?? 2,
-      banos: int.tryParse(_banosController.text) ?? 1,
-      estacionamientos: int.tryParse(_estacionamientosController.text) ?? 1,
-      metrosCuadrados: double.tryParse(_metrosCuadradosController.text) ?? 85.0,
-      fechaPublicacion: DateTime.now(),
+      habitaciones: int.parse(_habitacionesController.text.trim()),
+      banos: int.parse(_banosController.text.trim()),
+      estacionamientos: int.parse(_estacionamientosController.text.trim()),
+      metrosCuadrados: metros.isEmpty ? null : double.parse(metros),
+      amenidadesIds: _amenidadesSeleccionadas.toList()..sort(),
     );
 
-    mockDatabase.agregarPropiedad(nueva);
-
-    if (mounted) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: const [
-              Icon(Icons.check_circle_rounded, color: Colors.white),
-              SizedBox(width: 10),
-              Text('¡Propiedad publicada exitosamente!'),
-            ],
-          ),
-          backgroundColor: Colors.green.shade700,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    try {
+      await ref.read(misPropiedadesProvider.notifier).publicar(nueva, List.of(_imagenes));
+      if (!mounted) return;
+      Avisos.exito(context, '¡Propiedad publicada exitosamente!');
       context.pop();
+    } catch (error) {
+      if (mounted) Avisos.error(context, error);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  String? _requerido(String? val) => val == null || val.trim().isEmpty ? 'Requerido' : null;
+
+  String? _enteroValido(String? val) {
+    final numero = int.tryParse(val?.trim() ?? '');
+    return numero == null || numero < 0 || numero > 50 ? 'Entre 0 y 50' : null;
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final amenidades = ref.watch(amenidadesProvider);
+    final soloNumeros = [FilteringTextInputFormatter.digitsOnly];
 
     return Scaffold(
       appBar: AppBar(
@@ -190,35 +156,28 @@ class _PublicarPropiedadScreenState extends State<PublicarPropiedadScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Sección de Fotos
               _buildSectionTitle(theme, 'Fotografías del Inmueble'),
               const SizedBox(height: 8),
               Text(
-                'Sube fotos reales y bien iluminadas para atraer más inquilinos.',
+                'Sube de 1 a $_maximoImagenes fotos reales y bien iluminadas (JPG, PNG o WEBP, máximo 5 MB cada una).',
                 style: theme.textTheme.bodySmall,
               ),
               const SizedBox(height: 12),
-
               SizedBox(
                 height: 110,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
-                    // Botón para agregar foto
                     InkWell(
-                      onTap: _pickImages,
+                      onTap: _isLoading ? null : _pickImages,
                       borderRadius: BorderRadius.circular(16),
                       child: Container(
                         width: 110,
                         margin: const EdgeInsets.only(right: 12),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withOpacity(0.08),
+                          color: theme.colorScheme.primary.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: theme.colorScheme.primary.withOpacity(0.4),
-                            style: BorderStyle.solid,
-                            width: 1.5,
-                          ),
+                          border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.4), width: 1.5),
                         ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -233,88 +192,68 @@ class _PublicarPropiedadScreenState extends State<PublicarPropiedadScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // Botón para foto de muestra HD
-                    InkWell(
-                      onTap: _agregarFotoMuestra,
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        width: 110,
-                        margin: const EdgeInsets.only(right: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.amber.withOpacity(0.5), width: 1.5),
-                        ),
-                        child: const Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.photo_library_rounded, color: Colors.amber, size: 28),
-                            SizedBox(height: 6),
                             Text(
-                              '+ Muestra HD',
-                              style: TextStyle(fontSize: 12, color: Colors.amber, fontWeight: FontWeight.bold),
+                              '${_imagenes.length}/$_maximoImagenes',
+                              style: TextStyle(fontSize: 11, color: theme.colorScheme.primary),
                             ),
                           ],
                         ),
                       ),
                     ),
-
-                    // Lista de fotos actuales
-                    ..._imagenesUrls.asMap().entries.map((entry) {
-                      final idx = entry.key;
-                      final url = entry.value;
+                    ..._imagenes.asMap().entries.map((entry) {
                       return Stack(
                         children: [
                           Container(
                             width: 110,
                             margin: const EdgeInsets.only(right: 12),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              image: DecorationImage(image: NetworkImage(url), fit: BoxFit.cover),
-                            ),
+                            clipBehavior: Clip.antiAlias,
+                            decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
+                            child: Image.memory(entry.value.bytes, fit: BoxFit.cover, height: 110),
                           ),
+                          if (entry.key == 0)
+                            Positioned(
+                              left: 6,
+                              bottom: 6,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Text('Portada', style: TextStyle(color: Colors.white, fontSize: 10)),
+                              ),
+                            ),
                           Positioned(
                             top: 4,
                             right: 16,
                             child: InkWell(
-                              onTap: () {
-                                setState(() => _imagenesUrls.removeAt(idx));
-                              },
+                              onTap: _isLoading ? null : () => setState(() => _imagenes.removeAt(entry.key)),
                               child: Container(
                                 padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
-                                  color: Colors.black54,
-                                  shape: BoxShape.circle,
-                                ),
+                                decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
                                 child: const Icon(Icons.close, size: 14, color: Colors.white),
                               ),
                             ),
                           ),
                         ],
                       );
-                    }).toList(),
+                    }),
                   ],
                 ),
               ),
-
               const SizedBox(height: 24),
-
-              // Información Básica
               _buildSectionTitle(theme, 'Datos Generales'),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _tituloController,
+                maxLength: 150,
                 decoration: const InputDecoration(
                   labelText: 'Título de la publicación *',
-                  hintText: 'Ej. Departamento amueblado en Condesa',
+                  hintText: 'Ej. Departamento amueblado en el Centro',
                   prefixIcon: Icon(Icons.title_rounded),
+                  counterText: '',
                 ),
-                validator: (val) => val == null || val.trim().isEmpty ? 'Requerido' : null,
+                validator: _requerido,
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -325,23 +264,20 @@ class _PublicarPropiedadScreenState extends State<PublicarPropiedadScreen> {
                   hintText: 'Describe el inmueble, distribución, reglas y entorno...',
                   prefixIcon: Icon(Icons.description_outlined),
                 ),
-                validator: (val) => val == null || val.trim().isEmpty ? 'Requerido' : null,
+                validator: _requerido,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _precioController,
-                keyboardType: TextInputType.number,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
                   labelText: 'Renta mensual (MXN) *',
                   hintText: 'Ej. 14500',
                   prefixIcon: Icon(Icons.attach_money_rounded),
                 ),
-                validator: (val) => val == null || val.trim().isEmpty ? 'Requerido' : null,
+                validator: (val) => PriceValidator.isValid(val) ? null : 'Ingresa un precio mayor a 0',
               ),
-
               const SizedBox(height: 24),
-
-              // Características / Habitaciones
               _buildSectionTitle(theme, 'Características'),
               const SizedBox(height: 12),
               Row(
@@ -350,10 +286,9 @@ class _PublicarPropiedadScreenState extends State<PublicarPropiedadScreen> {
                     child: TextFormField(
                       controller: _habitacionesController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Recámaras',
-                        prefixIcon: Icon(Icons.bed_outlined),
-                      ),
+                      inputFormatters: soloNumeros,
+                      decoration: const InputDecoration(labelText: 'Recámaras', prefixIcon: Icon(Icons.bed_outlined)),
+                      validator: _enteroValido,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -361,10 +296,9 @@ class _PublicarPropiedadScreenState extends State<PublicarPropiedadScreen> {
                     child: TextFormField(
                       controller: _banosController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Baños',
-                        prefixIcon: Icon(Icons.bathtub_outlined),
-                      ),
+                      inputFormatters: soloNumeros,
+                      decoration: const InputDecoration(labelText: 'Baños', prefixIcon: Icon(Icons.bathtub_outlined)),
+                      validator: _enteroValido,
                     ),
                   ),
                 ],
@@ -376,29 +310,34 @@ class _PublicarPropiedadScreenState extends State<PublicarPropiedadScreen> {
                     child: TextFormField(
                       controller: _estacionamientosController,
                       keyboardType: TextInputType.number,
+                      inputFormatters: soloNumeros,
                       decoration: const InputDecoration(
                         labelText: 'Estacionamientos',
                         prefixIcon: Icon(Icons.directions_car_outlined),
                       ),
+                      validator: _enteroValido,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextFormField(
                       controller: _metrosCuadradosController,
-                      keyboardType: TextInputType.number,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: const InputDecoration(
                         labelText: 'm² Totales',
                         prefixIcon: Icon(Icons.square_foot_outlined),
                       ),
+                      validator: (val) {
+                        final texto = val?.trim() ?? '';
+                        if (texto.isEmpty) return null;
+                        final valor = double.tryParse(texto);
+                        return valor == null || valor <= 0 ? 'Número mayor a 0' : null;
+                      },
                     ),
                   ),
                 ],
               ),
-
               const SizedBox(height: 24),
-
-              // Ubicación
               _buildSectionTitle(theme, 'Ubicación y Dirección'),
               const SizedBox(height: 12),
               TextFormField(
@@ -408,7 +347,7 @@ class _PublicarPropiedadScreenState extends State<PublicarPropiedadScreen> {
                   hintText: 'Ej. Av. Universidad',
                   prefixIcon: Icon(Icons.add_road_rounded),
                 ),
-                validator: (val) => val == null || val.trim().isEmpty ? 'Requerido' : null,
+                validator: _requerido,
               ),
               const SizedBox(height: 12),
               Row(
@@ -416,21 +355,15 @@ class _PublicarPropiedadScreenState extends State<PublicarPropiedadScreen> {
                   Expanded(
                     child: TextFormField(
                       controller: _numeroExteriorController,
-                      decoration: const InputDecoration(
-                        labelText: 'Núm. Exterior *',
-                        prefixIcon: Icon(Icons.pin_outlined),
-                      ),
-                      validator: (val) => val == null || val.trim().isEmpty ? 'Requerido' : null,
+                      decoration: const InputDecoration(labelText: 'Núm. Exterior *', prefixIcon: Icon(Icons.pin_outlined)),
+                      validator: _requerido,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextFormField(
                       controller: _numeroInteriorController,
-                      decoration: const InputDecoration(
-                        labelText: 'Núm. Int. (Opcional)',
-                        prefixIcon: Icon(Icons.tag_rounded),
-                      ),
+                      decoration: const InputDecoration(labelText: 'Núm. Int. (Opcional)', prefixIcon: Icon(Icons.tag_rounded)),
                     ),
                   ),
                 ],
@@ -446,7 +379,7 @@ class _PublicarPropiedadScreenState extends State<PublicarPropiedadScreen> {
                         hintText: 'Ej. Centro',
                         prefixIcon: Icon(Icons.location_city_rounded),
                       ),
-                      validator: (val) => val == null || val.trim().isEmpty ? 'Requerido' : null,
+                      validator: _requerido,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -454,12 +387,14 @@ class _PublicarPropiedadScreenState extends State<PublicarPropiedadScreen> {
                     child: TextFormField(
                       controller: _codigoPostalController,
                       keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(5)],
                       decoration: const InputDecoration(
                         labelText: 'Código Postal *',
                         hintText: 'Ej. 76000',
                         prefixIcon: Icon(Icons.local_post_office_outlined),
                       ),
-                      validator: (val) => val == null || val.trim().isEmpty ? 'Requerido' : null,
+                      validator: (val) =>
+                          RegExp(r'^[0-9]{5}$').hasMatch(val?.trim() ?? '') ? null : '5 dígitos',
                     ),
                   ),
                 ],
@@ -470,57 +405,61 @@ class _PublicarPropiedadScreenState extends State<PublicarPropiedadScreen> {
                   Expanded(
                     child: TextFormField(
                       controller: _municipioController,
-                      decoration: const InputDecoration(
-                        labelText: 'Municipio / Alcaldía',
-                        prefixIcon: Icon(Icons.map_outlined),
-                      ),
+                      decoration: const InputDecoration(labelText: 'Municipio / Alcaldía *', prefixIcon: Icon(Icons.map_outlined)),
+                      validator: _requerido,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextFormField(
                       controller: _estadoController,
-                      decoration: const InputDecoration(
-                        labelText: 'Estado',
-                        prefixIcon: Icon(Icons.public_rounded),
-                      ),
+                      decoration: const InputDecoration(labelText: 'Estado *', prefixIcon: Icon(Icons.public_rounded)),
+                      validator: _requerido,
                     ),
                   ),
                 ],
               ),
-
               const SizedBox(height: 24),
-
-              // Servicios y Amenidades
-              _buildSectionTitle(theme, 'Servicios Incluidos y Amenidades'),
+              _buildSectionTitle(theme, 'Amenidades Incluidas'),
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: mockDatabase.serviciosDisponibles.map((s) {
-                  final nombre = s['nombre'] as String;
-                  final isSelected = _serviciosSeleccionados.contains(nombre);
-                  return FilterChip(
-                    label: Text(nombre),
-                    selected: isSelected,
-                    onSelected: (val) {
-                      setState(() {
-                        if (val) {
-                          _serviciosSeleccionados.add(nombre);
-                        } else {
-                          _serviciosSeleccionados.remove(nombre);
-                        }
-                      });
-                    },
-                    selectedColor: theme.colorScheme.primary.withOpacity(0.2),
-                    checkmarkColor: theme.colorScheme.primary,
-                  );
-                }).toList(),
+              amenidades.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (error, _) => Row(
+                  children: [
+                    Expanded(child: Text('No se pudieron cargar las amenidades: $error')),
+                    TextButton(
+                      onPressed: () => ref.invalidate(amenidadesProvider),
+                      child: const Text('Reintentar'),
+                    ),
+                  ],
+                ),
+                data: (lista) => Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: lista.map((amenidad) {
+                    final isSelected = _amenidadesSeleccionadas.contains(amenidad.id);
+                    return FilterChip(
+                      label: Text(amenidad.nombre),
+                      selected: isSelected,
+                      onSelected: (val) {
+                        setState(() {
+                          if (val) {
+                            _amenidadesSeleccionadas.add(amenidad.id);
+                          } else {
+                            _amenidadesSeleccionadas.remove(amenidad.id);
+                          }
+                        });
+                      },
+                      selectedColor: theme.colorScheme.primary.withValues(alpha: 0.2),
+                      checkmarkColor: theme.colorScheme.primary,
+                    );
+                  }).toList(),
+                ),
               ),
-
               const SizedBox(height: 32),
-
-              // Botón Guardar / Publicar
               SizedBox(
                 width: double.infinity,
                 height: 54,
@@ -545,9 +484,6 @@ class _PublicarPropiedadScreenState extends State<PublicarPropiedadScreen> {
   }
 
   Widget _buildSectionTitle(ThemeData theme, String title) {
-    return Text(
-      title,
-      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-    );
+    return Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold));
   }
 }

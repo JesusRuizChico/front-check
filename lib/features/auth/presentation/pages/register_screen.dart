@@ -1,17 +1,26 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../data/mock_database.dart';
-import '../../../properties/presentation/widgets/theme_selector_sheet.dart';
 
-class RegisterScreen extends StatefulWidget {
+import '../../../../core/router/rutas.dart';
+import '../../../../core/utils/email_validator.dart';
+import '../../../../core/utils/password_validator.dart';
+import '../../../../core/utils/phone_validator.dart';
+import '../../../../core/widgets/avisos.dart';
+import '../../../../domain/models/registro_usuario.dart';
+import '../../../../domain/models/usuario_model.dart';
+import '../../../properties/presentation/widgets/theme_selector_sheet.dart';
+import '../../application/sesion_controller.dart';
+
+class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -20,8 +29,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool _isLoading = false;
   bool _obscurePassword = true;
-  bool _acceptedPrivacy = true;
-  String _selectedRole = 'arrendatario'; // 'arrendatario', 'arrendador', 'servicios'
+  bool _acceptedPrivacy = false;
+  String _selectedRole = Usuario.rolArrendatario;
 
   Future<void> _register() async {
     if (!_acceptedPrivacy) {
@@ -36,40 +45,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
-
-    await Future.delayed(const Duration(milliseconds: 350));
-
-    final nuevo = mockDatabase.registrarUsuario(
-      nombre: _nameController.text.trim(),
-      correo: _emailController.text.trim(),
-      contrasena: _passwordController.text,
-      telefono: _phoneController.text.trim(),
-      rolSolicitado: _selectedRole,
-    );
-
-    if (mounted) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: const [
-              Icon(Icons.check_circle_rounded, color: Colors.white),
-              SizedBox(width: 8),
-              Text('¡Registro exitoso! Sesión iniciada.'),
-            ],
-          ),
-          backgroundColor: Colors.green.shade700,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-
-      if (nuevo.esArrendador) {
-        context.go('/dashboard-arrendador');
-      } else if (nuevo.esPrestador) {
-        context.go('/dashboard-servicios');
-      } else {
-        context.go('/home');
-      }
+    try {
+      await ref.read(sesionProvider.notifier).registrarse(RegistroUsuario(
+            nombre: _nameController.text.trim(),
+            correo: _emailController.text.trim().toLowerCase(),
+            contrasena: _passwordController.text,
+            telefono: _phoneController.text.trim(),
+            rol: _selectedRole,
+          ));
+      if (mounted) Avisos.exito(context, '¡Registro exitoso! Sesión iniciada.');
+    } catch (error) {
+      if (mounted) Avisos.error(context, error);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -91,7 +79,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => context.pop(),
+          onPressed: () => context.go(Rutas.bienvenida),
         ),
         actions: [
           IconButton(
@@ -112,7 +100,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               height: 250,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: theme.colorScheme.primary.withOpacity(0.18),
+                color: theme.colorScheme.primary.withValues(alpha: 0.18),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 90, sigmaY: 90),
@@ -132,7 +120,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withOpacity(0.12),
+                          color: theme.colorScheme.primary.withValues(alpha: 0.12),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -167,27 +155,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         Expanded(
                           child: _RoleChoiceCard(
                             title: 'Inquilino',
+                            subtitle: 'Busco dónde vivir',
                             icon: Icons.person_rounded,
-                            isSelected: _selectedRole == 'arrendatario',
-                            onTap: () => setState(() => _selectedRole = 'arrendatario'),
+                            isSelected: _selectedRole == Usuario.rolArrendatario,
+                            onTap: () => setState(() => _selectedRole = Usuario.rolArrendatario),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: _RoleChoiceCard(
                             title: 'Arrendador',
+                            subtitle: 'Publico propiedades',
                             icon: Icons.real_estate_agent_rounded,
-                            isSelected: _selectedRole == 'arrendador',
-                            onTap: () => setState(() => _selectedRole = 'arrendador'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _RoleChoiceCard(
-                            title: 'Técnico',
-                            icon: Icons.build_rounded,
-                            isSelected: _selectedRole == 'servicios',
-                            onTap: () => setState(() => _selectedRole = 'servicios'),
+                            isSelected: _selectedRole == Usuario.rolArrendador,
+                            onTap: () => setState(() => _selectedRole = Usuario.rolArrendador),
                           ),
                         ),
                       ],
@@ -220,7 +201,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 prefixIcon: Icon(Icons.email_outlined),
                               ),
                               validator: (val) =>
-                                  val == null || val.trim().isEmpty ? 'Requerido' : null,
+                                  EmailValidator.isValid(val) ? null : 'Ingresa un correo válido',
                             ),
                             const SizedBox(height: 14),
                             TextFormField(
@@ -231,7 +212,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 prefixIcon: Icon(Icons.phone_outlined),
                               ),
                               validator: (val) =>
-                                  val == null || val.trim().isEmpty ? 'Requerido' : null,
+                                  PhoneValidator.isValid(val) ? null : 'Debe tener 10 dígitos',
                             ),
                             const SizedBox(height: 14),
                             TextFormField(
@@ -248,8 +229,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       setState(() => _obscurePassword = !_obscurePassword),
                                 ),
                               ),
-                              validator: (val) =>
-                                  val == null || val.length < 6 ? 'Mínimo 6 caracteres' : null,
+                              validator: (val) => PasswordValidator.isValid(val)
+                                  ? null
+                                  : 'Mínimo 8 caracteres, una mayúscula y un número',
                             ),
                           ],
                         ),
@@ -296,7 +278,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       children: [
                         Text('¿Ya tienes una cuenta? ', style: theme.textTheme.bodyMedium),
                         TextButton(
-                          onPressed: () => context.pop(),
+                          onPressed: () => context.go(Rutas.login),
                           child: const Text('Inicia sesión'),
                         ),
                       ],
@@ -315,12 +297,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
 class _RoleChoiceCard extends StatelessWidget {
   final String title;
+  final String subtitle;
   final IconData icon;
   final bool isSelected;
   final VoidCallback onTap;
 
   const _RoleChoiceCard({
     required this.title,
+    required this.subtitle,
     required this.icon,
     required this.isSelected,
     required this.onTap,
@@ -336,26 +320,32 @@ class _RoleChoiceCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.15) : theme.cardColor,
+          color: isSelected ? color.withValues(alpha: 0.15) : theme.cardColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? color : Colors.grey.withOpacity(0.2),
+            color: isSelected ? color : Colors.grey.withValues(alpha: 0.2),
             width: isSelected ? 2 : 1,
           ),
         ),
         child: Column(
           children: [
-            Icon(icon, color: isSelected ? color : Colors.grey, size: 26),
+            Icon(icon, color: isSelected ? color : Colors.grey, size: 30),
             const SizedBox(height: 6),
             Text(
               title,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 14,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 color: isSelected ? color : null,
               ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
             ),
           ],
         ),

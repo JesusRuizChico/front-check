@@ -1,16 +1,19 @@
+import '../models/archivo_imagen.dart';
+import '../models/nueva_propiedad.dart';
 import '../models/propiedad_model.dart';
-import '../models/servicio_model.dart';
 
-abstract class IPropiedadRepository {
-  Future<List<Propiedad>> getCatalogo({String? query, String? categoria, double? maxPrecio});
-  Future<List<Propiedad>> getMisPropiedades(int arrendadorId);
-  Future<Propiedad?> getPropiedadPorId(int id);
-  Future<Propiedad> crearPropiedad(Propiedad propiedad);
-  Future<void> actualizarEstado(int id, String nuevoEstado);
-  Future<void> eliminarPropiedad(int id);
-  Future<bool> toggleFavorito(int id);
-  Future<List<Propiedad>> getFavoritos();
-  Future<List<ServicioMantenimiento>> getServiciosMantenimiento();
-  Future<List<Map<String, dynamic>>> getCatalogoServiciosDisponibles();
+/// Consulta del catálogo público de propiedades.
+abstract interface class ICatalogoRepository {
+  Future<List<Propiedad>> obtenerCatalogo();
 }
 
+/// Gestión de las publicaciones del arrendador.
+abstract interface class IMisPropiedadesRepository {
+  Future<List<Propiedad>> obtenerMisPropiedades();
+
+  Future<Propiedad> publicar(NuevaPropiedad propiedad, List<ArchivoImagen> imagenes);
+
+  Future<Propiedad> cambiarEstado(int idPropiedad, String nuevoEstado);
+
+  Future<void> eliminar(int idPropiedad);
+}

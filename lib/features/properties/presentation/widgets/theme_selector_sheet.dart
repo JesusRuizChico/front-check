@@ -27,7 +27,7 @@ class ThemeSelectorSheet extends ConsumerWidget {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 30,
             offset: const Offset(0, -10),
           ),
@@ -43,7 +43,7 @@ class ThemeSelectorSheet extends ConsumerWidget {
                 width: 44,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.4),
+                  color: Colors.grey.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
@@ -117,11 +117,11 @@ class ThemeSelectorSheet extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? palette.primary.withOpacity(0.15)
+                          ? palette.primary.withValues(alpha: 0.15)
                           : theme.scaffoldBackgroundColor,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isSelected ? palette.primary : Colors.grey.withOpacity(0.2),
+                        color: isSelected ? palette.primary : Colors.grey.withValues(alpha: 0.2),
                         width: isSelected ? 2 : 1,
                       ),
                     ),
@@ -136,7 +136,7 @@ class ThemeSelectorSheet extends ConsumerWidget {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: palette.primary.withOpacity(0.5),
+                                color: palette.primary.withValues(alpha: 0.5),
                                 blurRadius: 6,
                               ),
                             ],
@@ -195,10 +195,10 @@ class _ModeOptionCard extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isSelected ? primary.withOpacity(0.12) : theme.scaffoldBackgroundColor,
+          color: isSelected ? primary.withValues(alpha: 0.12) : theme.scaffoldBackgroundColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? primary : Colors.grey.withOpacity(0.2),
+            color: isSelected ? primary : Colors.grey.withValues(alpha: 0.2),
             width: isSelected ? 2 : 1,
           ),
         ),

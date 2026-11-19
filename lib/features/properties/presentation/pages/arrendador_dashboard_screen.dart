@@ -4,7 +4,6 @@ import 'package:front_check/features/properties/data/propiedad_service.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:front_check/core/theme/app_colors.dart';
-
 class ArrendadorDashboardScreen extends StatefulWidget {
   const ArrendadorDashboardScreen({super.key});
 
@@ -124,6 +123,7 @@ class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
                             padding: const EdgeInsets.only(bottom: 20.0),
                             child: _buildPremiumCard(
                               context: context,
+                              propiedadData: Map<String, dynamic>.from(p),
                               title: p['titulo'] ?? 'Sin título',
                               price: '\$${p['precioMensual']}',
                               location: '${p['colonia']}, ${p['municipio']}, ${p['estadoUbicacion']}',
@@ -210,6 +210,7 @@ class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
 
   Widget _buildPremiumCard({
     required BuildContext context,
+    required Map<String, dynamic> propiedadData,
     required String title,
     required String price,
     required String location,
@@ -311,6 +312,57 @@ class _ArrendadorDashboardScreenState extends State<ArrendadorDashboardScreen> {
               ],
             ),
           ),
+          // ── Botón Editar (independiente, no toca Contactar) ─────────────
+          Builder(builder: (ctx) {
+            final String estado = propiedadData['estado'] ?? 'disponible';
+            final bool puedeEditar = estado != 'rentada' && estado != 'eliminada';
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: puedeEditar
+                  ? SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.edit_outlined, size: 16),
+                        label: const Text('Editar propiedad'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.accent,
+                          side: const BorderSide(color: AppColors.accent),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () async {
+                          final resultado = await ctx.push<bool>(
+                            '/editar-propiedad',
+                            extra: propiedadData,
+                          );
+                          if (resultado == true && mounted) {
+                            setState(() => _cargarPropiedades());
+                          }
+                        },
+                      ),
+                    )
+                  : Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Theme.of(ctx).colorScheme.secondary.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Theme.of(ctx).colorScheme.secondary.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.lock_outline, size: 14, color: Theme.of(ctx).colorScheme.secondary),
+                          const SizedBox(width: 6),
+                          Text(
+                            estado == 'rentada' ? '🔒 No editable — Rentada' : '🔒 No editable — Eliminada',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Theme.of(ctx).colorScheme.secondary),
+                          ),
+                        ],
+                      ),
+                    ),
+            );
+          }),
         ],
       ),
     );

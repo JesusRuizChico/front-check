@@ -62,6 +62,35 @@ class PropiedadService {
     }
     throw Exception('Error al cargar propiedades');
   }
+
+  Future<Map<String, dynamic>> editarPropiedad({
+    required int idPropiedad,
+    required String titulo,
+    required String descripcion,
+    required String precioMensual,
+    required String calle,
+    required String numeroExterior,
+    String? numeroInterior,
+    required String colonia,
+    required String municipio,
+    required String estadoUbicacion,
+    required String codigoPostal,
+  }) async {
+    final body = <String, dynamic>{
+      'titulo': titulo,
+      'descripcion': descripcion,
+      'precioMensual': double.tryParse(precioMensual) ?? 0,
+      'calle': calle,
+      'numeroExterior': numeroExterior,
+      'numeroInterior': numeroInterior ?? '',
+      'colonia': colonia,
+      'municipio': municipio,
+      'estadoUbicacion': estadoUbicacion,
+      'codigoPostal': codigoPostal,
+    };
+
+    return await apiClient.put('/propiedades/$idPropiedad', body);
+  }
 }
 
 final propiedadService = PropiedadService();

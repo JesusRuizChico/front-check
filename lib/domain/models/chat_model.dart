@@ -5,6 +5,7 @@ class Mensaje {
   final String contenido;
   final DateTime fechaEnvio;
   final DateTime? fechaLectura;
+  final bool eliminado;
 
   const Mensaje({
     required this.id,
@@ -12,6 +13,7 @@ class Mensaje {
     required this.contenido,
     required this.fechaEnvio,
     this.fechaLectura,
+    this.eliminado = false,
   });
 
   bool esMio(int miUsuarioId) => emisorId == miUsuarioId;

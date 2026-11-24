@@ -14,6 +14,7 @@ class ChatMapper {
       contenido: JsonLector.texto(json['contenido']),
       fechaEnvio: JsonLector.fecha(json['fechaEnvio']),
       fechaLectura: JsonLector.fechaOpcional(json['fechaLectura']),
+      eliminado: json['eliminado'] == true,
     );
   }
 

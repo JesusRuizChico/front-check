@@ -11,6 +11,20 @@ void main() {
     expect(Formato.moneda(1250000), r'$1,250,000');
   });
 
+  test('Formato.etiquetaDia distingue Hoy, Ayer y fechas anteriores', () {
+    final ahora = DateTime(2026, 11, 23, 13, 0);
+    expect(Formato.etiquetaDia(DateTime(2026, 11, 23, 8, 30), ahora: ahora), 'Hoy');
+    expect(Formato.etiquetaDia(DateTime(2026, 11, 22, 23, 59), ahora: ahora), 'Ayer');
+    expect(Formato.etiquetaDia(DateTime(2026, 3, 5), ahora: ahora), '5 de marzo de 2026');
+    // Ayer también funciona al cruzar de mes.
+    expect(Formato.etiquetaDia(DateTime(2026, 10, 31), ahora: DateTime(2026, 11, 1)), 'Ayer');
+  });
+
+  test('Formato.mismoDia compara solo el día calendario', () {
+    expect(Formato.mismoDia(DateTime(2026, 11, 23, 0, 1), DateTime(2026, 11, 23, 23, 59)), isTrue);
+    expect(Formato.mismoDia(DateTime(2026, 11, 23), DateTime(2026, 11, 24)), isFalse);
+  });
+
   test('FormatoImagen detecta el tipo real por su contenido', () {
     expect(FormatoImagen.extension(Uint8List.fromList([0xFF, 0xD8, 0xFF, 0xE0])), 'jpg');
     expect(

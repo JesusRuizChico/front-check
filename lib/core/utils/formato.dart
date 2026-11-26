@@ -12,6 +12,22 @@ class Formato {
   static String hora(DateTime fecha) =>
       '${fecha.hour.toString().padLeft(2, '0')}:${fecha.minute.toString().padLeft(2, '0')}';
 
+  /// Indica si ambas fechas caen en el mismo día calendario.
+  static bool mismoDia(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
+
+  static const _meses = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+  ];
+
+  /// Etiqueta del separador de día en un chat: "Hoy", "Ayer" o "5 de marzo de 2026".
+  static String etiquetaDia(DateTime fecha, {DateTime? ahora}) {
+    final hoy = ahora ?? DateTime.now();
+    if (mismoDia(fecha, hoy)) return 'Hoy';
+    if (mismoDia(fecha, DateTime(hoy.year, hoy.month, hoy.day - 1))) return 'Ayer';
+    return '${fecha.day} de ${_meses[fecha.month - 1]} de ${fecha.year}';
+  }
+
   /// Tiempo relativo corto para listas de chats.
   static String haceCuanto(DateTime fecha, {DateTime? ahora}) {
     final diferencia = (ahora ?? DateTime.now()).difference(fecha);

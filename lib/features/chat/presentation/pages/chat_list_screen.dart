@@ -225,7 +225,9 @@ class _ConversacionCard extends StatelessWidget {
     final ultimo = conversacion.ultimoMensaje;
     final vistaPrevia = ultimo == null
         ? 'Sin mensajes'
-        : (miUsuarioId != null && ultimo.esMio(miUsuarioId!) ? 'Tú: ${ultimo.contenido}' : ultimo.contenido);
+        : ultimo.eliminado
+            ? 'Mensaje eliminado'
+            : (miUsuarioId != null && ultimo.esMio(miUsuarioId!) ? 'Tú: ${ultimo.contenido}' : ultimo.contenido);
 
     return Card(
       elevation: hasUnread ? 4 : 1,

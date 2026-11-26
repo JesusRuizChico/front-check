@@ -14,4 +14,7 @@ abstract interface class IChatRepository {
   Future<MensajeEnviado> iniciarDesdePropiedad(int idPropiedad, String contenido);
 
   Future<void> marcarComoLeidos(int conversacionId);
+
+  /// Elimina un mensaje propio y devuelve su versión ya marcada como eliminada.
+  Future<Mensaje> eliminarMensaje(int conversacionId, int mensajeId);
 }

@@ -107,6 +107,17 @@ class ChatController extends Notifier<ChatState> {
     }
   }
 
+  Future<void> eliminar(int mensajeId) async {
+    final conversacionId = state.conversacionId;
+    if (conversacionId == null) return;
+    final eliminado = await _repositorio.eliminarMensaje(conversacionId, mensajeId);
+    if (!ref.mounted) return;
+    state = state.copyWith(
+      mensajes: [for (final m in state.mensajes) m.id == mensajeId ? eliminado : m],
+    );
+    ref.read(conversacionesProvider.notifier).refrescar();
+  }
+
   Future<void> _iniciarSincronizacion(int conversacionId) async {
     await _actualizar(conversacionId);
     _programarActualizacion(conversacionId);
@@ -123,6 +134,7 @@ class ChatController extends Notifier<ChatState> {
       if (!ref.mounted) return;
       final cambiaron = mensajes.length != state.mensajes.length ||
           mensajes.any((m) => m.leido) != state.mensajes.any((m) => m.leido) ||
+          mensajes.where((m) => m.eliminado).length != state.mensajes.where((m) => m.eliminado).length ||
           (mensajes.isNotEmpty && mensajes.last.id != state.mensajes.lastOrNull?.id);
       if (cambiaron || state.cargando || state.error != null) {
         state = state.copyWith(mensajes: mensajes, cargando: false, limpiarError: true);

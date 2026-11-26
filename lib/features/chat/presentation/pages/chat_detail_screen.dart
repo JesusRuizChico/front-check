@@ -255,8 +255,65 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       itemCount: chat.mensajes.length,
       itemBuilder: (context, index) {
         final msg = chat.mensajes[index];
-        return _BurbujaMensaje(mensaje: msg, esMio: miId != null && msg.esMio(miId));
+        final esMio = miId != null && msg.esMio(miId);
+        final nuevoDia = index == 0 || !Formato.mismoDia(chat.mensajes[index - 1].fechaEnvio, msg.fechaEnvio);
+        return Column(
+          children: [
+            if (nuevoDia) _SeparadorDia(fecha: msg.fechaEnvio),
+            _BurbujaMensaje(
+              mensaje: msg,
+              esMio: esMio,
+              onEliminar: esMio && !msg.eliminado ? () => _confirmarEliminar(msg) : null,
+            ),
+          ],
+        );
       },
+    );
+  }
+
+  Future<void> _confirmarEliminar(Mensaje mensaje) async {
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Eliminar mensaje'),
+        content: const Text('El mensaje dejará de verse para ambos participantes.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Eliminar')),
+        ],
+      ),
+    );
+    if (confirmado != true || !mounted) return;
+    try {
+      await ref.read(chatProvider(widget.args.destino).notifier).eliminar(mensaje.id);
+    } catch (error) {
+      if (mounted) Avisos.error(context, error);
+    }
+  }
+}
+
+/// Etiqueta con el día ("Hoy", "Ayer", fecha) que separa los mensajes de distintas jornadas.
+class _SeparadorDia extends StatelessWidget {
+  final DateTime fecha;
+
+  const _SeparadorDia({required this.fecha});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          Formato.etiquetaDia(fecha),
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: theme.colorScheme.primary),
+        ),
+      ),
     );
   }
 }
@@ -264,8 +321,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 class _BurbujaMensaje extends StatelessWidget {
   final Mensaje mensaje;
   final bool esMio;
+  final VoidCallback? onEliminar;
 
-  const _BurbujaMensaje({required this.mensaje, required this.esMio});
+  const _BurbujaMensaje({required this.mensaje, required this.esMio, this.onEliminar});
 
   @override
   Widget build(BuildContext context) {
@@ -273,7 +331,9 @@ class _BurbujaMensaje extends StatelessWidget {
     final oscuro = theme.brightness == Brightness.dark;
     return Align(
       alignment: esMio ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
+      child: GestureDetector(
+        onLongPress: onEliminar,
+        child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4),
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -295,10 +355,11 @@ class _BurbujaMensaje extends StatelessWidget {
           crossAxisAlignment: esMio ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             Text(
-              mensaje.contenido,
+              mensaje.eliminado ? 'Mensaje eliminado' : mensaje.contenido,
               style: TextStyle(
                 color: esMio ? Colors.white : (oscuro ? Colors.white : Colors.black87),
                 fontSize: 15,
+                fontStyle: mensaje.eliminado ? FontStyle.italic : FontStyle.normal,
               ),
             ),
             const SizedBox(height: 4),
@@ -324,6 +385,7 @@ class _BurbujaMensaje extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

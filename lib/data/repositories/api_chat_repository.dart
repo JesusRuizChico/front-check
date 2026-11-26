@@ -56,4 +56,10 @@ class ApiChatRepository implements IChatRepository {
 
   @override
   Future<void> marcarComoLeidos(int conversacionId) => _api.put('/conversaciones/$conversacionId/lectura');
+
+  @override
+  Future<Mensaje> eliminarMensaje(int conversacionId, int mensajeId) async {
+    final json = await _api.delete('/conversaciones/$conversacionId/mensajes/$mensajeId');
+    return _mapper.mensajeDesdeJson(json as Map<String, dynamic>);
+  }
 }
